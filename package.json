@@ -3,23 +3,46 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "dotenv -e .env.dev -- next dev --turbopack",
+    "build": "dotenv -e .env.dev -- next build --turbopack",
+    "start": "dotenv -e .env.dev -- next start",
+    "lint": "eslint",
+    "studio": "dotenv -e .env.dev -- pnpm dlx prisma studio",
+    "migrate": "dotenv -e .env.dev -- pnpm dlx prisma migrate dev"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.0",
+    "@prisma/client": "^6.17.1",
+    "@prisma/extension-accelerate": "^2.0.2",
+    "@tanstack/react-query": "^5.90.2",
+    "@trpc/client": "^11.6.0",
+    "@trpc/react-query": "^11.6.0",
+    "@trpc/server": "^11.6.0",
+    "@trpc/tanstack-react-query": "^11.6.0",
+    "client-only": "^0.0.1",
+    "dotenv": "^17.2.3",
+    "dotenv-cli": "^10.0.0",
+    "eslint-plugin-next": "^0.0.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "next": "15.5.4",
+    "next-auth": "^4.24.11",
+    "prisma": "^6.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.4"
+    "react-error-boundary": "^6.0.0",
+    "sass": "^1.93.2",
+    "server-only": "^0.0.1",
+    "superjson": "^2.2.2",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "@eslint/eslintrc": "^3"
+    "typescript": "^5"
   }
 }

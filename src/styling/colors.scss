@@ -1,0 +1,18 @@
+@use "sass:color";
+
+$white: #bac1b8;
+$blue: #58a4b0;
+$green: #0c7c59;
+$black: #2b303a;
+$red: #d64933;
+
+$fg: $white;
+$bg: $black;
+
+$bg2: color.scale(color.scale($bg, $lightness: -55%), $saturation: -60%);
+
+$bg3: color.scale($bg, $lightness: -45%);
+
+$dropdown_bg: $bg2;
+$profile_section_bg: $bg2;
+$search_input_bg: $bg3;

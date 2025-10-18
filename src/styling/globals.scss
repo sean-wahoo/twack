@@ -1,12 +1,15 @@
+@use "@/styling/colors.scss" as c;
+@use "sass:color";
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: c.$white;
+  --foreground: c.$black;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: c.$black;
+    --foreground: c.$white;
   }
 }
 
@@ -19,7 +22,7 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-rubik);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

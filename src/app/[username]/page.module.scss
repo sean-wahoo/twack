@@ -1,0 +1,114 @@
+@use "@/styling/colors.scss" as c;
+
+.profile_section {
+  background-color: c.$bg2;
+  min-width: 896px;
+  width: fit-content;
+  margin: 2rem auto 0;
+  padding: 1.8rem;
+
+  > header {
+    display: flex;
+    flex-flow: row;
+    gap: 1rem;
+
+    > div {
+      display: flex;
+      flex-flow: column;
+      height: auto;
+
+      > p {
+        font-size: 0.8rem;
+        &:last-of-type {
+          margin-top: auto;
+        }
+      }
+    }
+  }
+
+  > main {
+    display: flex;
+    flex-flow: column nowrap;
+
+    > header {
+      width: 100%;
+      padding: 1rem;
+    }
+
+    > .profile_tracker_list {
+      list-style-type: none;
+
+      > li {
+        padding: 0.4rem;
+        font-size: 0.7rem;
+        display: flex;
+        flex-flow: row wrap;
+
+        > div {
+          padding: 0.4rem;
+          display: flex;
+          flex-flow: column nowrap;
+
+          > button {
+            margin-top: auto;
+            cursor: pointer;
+            padding: 0.2rem 0.2rem 0;
+            color: white;
+            > svg {
+              width: 1rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  > .add_tracker_dialog {
+    min-width: 636px;
+
+    > form {
+      padding: 0.2rem;
+      width: auto;
+      display: flex;
+      flex-flow: column nowrap;
+      > label {
+        margin-inline: auto;
+        padding: 0 0 1.6rem;
+
+        > input {
+          margin-inline: 0.4rem;
+          padding: 0.2rem;
+        }
+      }
+      > .game_search_result_container {
+        max-height: 70svh;
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(auto-fit, minmax(40%, 1fr));
+        overflow-y: auto;
+        gap: 0.8rem;
+        box-sizing: border-box;
+      }
+    }
+  }
+
+  > .edit_tracker_dialog {
+    > form {
+      display: flex;
+      flex-flow: row;
+
+      > div {
+        padding: 0.4rem;
+        display: flex;
+        flex-flow: column nowrap;
+
+        > div {
+          margin-top: auto;
+          > .delete_tracker_button {
+            background-color: c.$red;
+          }
+        }
+      }
+    }
+  }
+}

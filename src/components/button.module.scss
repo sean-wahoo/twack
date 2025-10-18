@@ -1,0 +1,12 @@
+@use "@/styling/colors" as c;
+
+.button_wrapper {
+  margin: 0.2rem;
+  width: fit-content;
+  padding: 0.3rem 0.6rem;
+  border-radius: 2px;
+  border: none;
+  background-color: c.$green;
+  cursor: pointer;
+  user-select: none;
+}

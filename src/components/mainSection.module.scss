@@ -1,0 +1,26 @@
+main.main_section {
+  background-color: inherit;
+  max-width: 1024px;
+  margin-inline: auto;
+  padding: 1rem;
+  display: flex;
+  flex-flow: column nowrap;
+
+  > section {
+    > h4 {
+      padding: 0.4rem;
+    }
+    > div {
+      display: flex;
+      flex-flow: row-nowrap;
+      width: 100%;
+      overflow-x: auto;
+
+      > span {
+        width: min-content;
+        min-width: 148px;
+        padding: 0.2rem;
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+.game_search_result {
+  display: flex;
+  width: 100%;
+  flex-flow: row nowrap;
+
+  cursor: pointer;
+
+  > img {
+    width: auto;
+  }
+
+  > div {
+    display: flex;
+    flex-flow: column nowrap;
+    padding: 0.4rem;
+
+    > p {
+      font-size: 0.75rem;
+    }
+
+    > .game_platforms {
+      margin-top: auto;
+    }
+  }
+}
