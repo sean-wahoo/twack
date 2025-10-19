@@ -17,6 +17,7 @@ const Navbar: React.FC = () => {
   const [dropdownShown, setDropdownShown] = useState<boolean>(false);
 
   const { data: session, status } = useSession();
+  console.log({ session });
   const accountMenuDropdown = (
     <ul
       className={[
@@ -28,7 +29,20 @@ const Navbar: React.FC = () => {
       data-dropdown
     >
       <li>
-        <Link href={`/${session?.user?.name}`}>Your profile</Link>
+        <Link
+          onClick={() => setDropdownShown(false)}
+          href={`/${session?.user?.slug}`}
+        >
+          Your profile
+        </Link>
+      </li>
+      <li>
+        <Link
+          onClick={() => setDropdownShown(false)}
+          href={`/${session?.user?.slug}/log`}
+        >
+          Your gaming log
+        </Link>
       </li>
       <li onClick={() => signOut()} className={styles.logout_button}>
         Logout

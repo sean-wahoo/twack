@@ -3,9 +3,7 @@ import { getSession } from "@/lib/auth";
 
 const UserLayout: NextPage<{
   children: React.ReactNode;
-  params: Promise<{ username: string }>;
-}> = async ({ children, params }) => {
-  const { username } = await params;
+}> = async ({ children }) => {
   const session = await getSession();
 
   return <>{children}</>;

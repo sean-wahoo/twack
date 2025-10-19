@@ -1,3 +1,6 @@
+@use "sass:color";
+@use "@/styling/colors.scss" as c;
+
 .game_search_result {
   display: flex;
   width: 100%;
@@ -14,8 +17,33 @@
     flex-flow: column nowrap;
     padding: 0.4rem;
 
-    > p {
+    > .game_platforms,
+    > .game_release_date,
+    > .game_tracker_status {
       font-size: 0.75rem;
+      padding: 0;
+
+      &:not(:first-of-type) {
+        margin-top: auto;
+      }
+    }
+
+    > .game_tracker_status {
+      padding: 0.2rem;
+      font-weight: 500;
+      width: min-content;
+      box-sizing: border-box;
+      border-radius: 2px;
+
+      &.backlog {
+        background-color: color.scale(c.$red, $alpha: -25%);
+      }
+      &.in_progress {
+        background-color: color.scale(c.$blue, $alpha: -25%);
+      }
+      &.complete {
+        background-color: color.scale(c.$green, $alpha: -25%);
+      }
     }
 
     > .game_platforms {

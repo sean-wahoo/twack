@@ -6,14 +6,14 @@ import { Suspense } from "react";
 
 const UserPage: NextPage<{
   children: React.ReactNode;
-  params: Promise<{ username: string }>;
+  params: Promise<{ userSlug: string }>;
 }> = async ({ params }) => {
-  const { username } = await params;
-  prefetch(trpc.user.getUserByName.queryOptions({ name: username }));
+  const { userSlug } = await params;
+  prefetch(trpc.user.getUserBySlug.queryOptions({ slug: userSlug }));
   return (
     <HydrateClient>
       <Suspense fallback={<p>loading...</p>}>
-        <Profile username={username} />
+        <Profile userSlug={userSlug} />
       </Suspense>
     </HydrateClient>
   );

@@ -1,6 +1,7 @@
 import z from "zod";
-import { createTRPCRouter, protectedProcedure } from "../init";
-import { Tracker, TrackerStatus } from "@/prisma/generated/prisma";
+import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
+import { TrackerStatus } from "@/prisma/generated/prisma";
+import { TRPCError } from "@trpc/server";
 
 const createTracker = protectedProcedure
   .input(
@@ -35,6 +36,7 @@ const updateTracker = protectedProcedure
     await ctx.prisma.tracker.update({
       where: {
         id: input.trackerId,
+        userId: ctx.session.user.id,
       },
       data: {
         status: input.status,
@@ -55,10 +57,12 @@ const deleteTracker = protectedProcedure
   )
   .mutation(async ({ input, ctx }) => {
     const { trackerId } = input;
+    const { session } = ctx;
 
     await ctx.prisma.tracker.delete({
       where: {
         id: trackerId,
+        userId: session.user.id,
       },
     });
     return {
@@ -66,8 +70,53 @@ const deleteTracker = protectedProcedure
     };
   });
 
+const getTrackersByUserId = baseProcedure
+  .input(
+    z.object({
+      userId: z.string(),
+    }),
+  )
+  .query(async ({ input, ctx }) => {
+    const trackers = await ctx.prisma.tracker.findMany({
+      where: {
+        userId: input.userId,
+      },
+    });
+    if (!trackers.length) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: `tracker search by user id ${input.userId} failed`,
+      });
+    }
+    return trackers;
+  });
+const getTrackersByUserSlug = baseProcedure
+  .input(
+    z.object({
+      slug: z.string(),
+    }),
+  )
+  .query(async ({ input, ctx }) => {
+    const trackers = await ctx.prisma.tracker.findMany({
+      where: {
+        user: {
+          slug: input.slug,
+        },
+      },
+    });
+    if (!trackers.length) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: `tracker search by user slug ${input.slug} failed`,
+      });
+    }
+    return trackers;
+  });
+
 export const trackerRouter = createTRPCRouter({
   createTracker,
   updateTracker,
   deleteTracker,
+  getTrackersByUserId,
+  getTrackersByUserSlug,
 });

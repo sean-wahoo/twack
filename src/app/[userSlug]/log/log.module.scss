@@ -1,0 +1,76 @@
+@use "@/styling/colors.scss" as c;
+
+$col_num: 3;
+
+main.main_log_area {
+  margin: 2rem auto 0;
+  flex-grow: 1;
+  min-width: min(1136px, calc(100% - 4rem));
+  background-color: c.$bg2;
+  padding: 2rem;
+  border-radius: 4px;
+
+  > section {
+    display: flex;
+    flex-flow: column nowrap;
+    > header {
+      place-self: flex-end;
+
+      > label {
+        padding: 0.4rem;
+      }
+
+      > select {
+        padding: 0.2rem;
+      }
+    }
+    > div {
+      display: grid;
+      grid-template-columns: repeat($col_num, 1fr);
+      width: auto;
+      place-items: center;
+      grid-auto-flow: row dense;
+      gap: 0.6rem;
+
+      // span {
+      //   grid-row: auto;
+      // }
+
+      h3 {
+        width: 100%;
+        text-align: center;
+        padding: 0.4rem;
+        border-bottom: 1px solid c.$blue;
+
+        &.backlog {
+          border-color: c.$red;
+        }
+        &.complete {
+          border-color: c.$green;
+        }
+      }
+      span {
+        padding: 0.4rem;
+        background-color: c.$bg3;
+      }
+    }
+    //
+    // span {
+    //   // grid-area: attr(data-order);
+    //   // grid-area: 2 / attr(data-order) / 2 / attr(data-order);
+    //   grid-column: attr(data-order);
+    // }
+
+    // @for $i from 1 through $col_num {
+    //   h3.tracker_col_#{$i} {
+    //     grid-area: 1 $i 1 $i;
+    //   }
+    //   span[data-col-#{$i}] {
+    //     grid-area: 2 $i 2 $i;
+    //   }
+    // }
+
+    // > span {
+    // }
+  }
+}

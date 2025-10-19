@@ -20,8 +20,8 @@ import { TrackerStatus } from "@/prisma/generated/prisma";
 import Button from "@/components/button";
 
 const Profile: React.FC<{
-  username: string;
-}> = ({ username }) => {
+  userSlug: string;
+}> = ({ userSlug }) => {
   const trpc = useTRPC();
   const [gameSearchValue, setGameSearchValue] = useState<string>("");
   const [gameSearchResultContent, setGameSearchResultContent] =
@@ -40,7 +40,7 @@ const Profile: React.FC<{
 
   const { data, status } = useSession();
   const { data: user } = useSuspenseQuery(
-    trpc.user.getUserByName.queryOptions({ name: username }),
+    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
   );
 
   const createTrackerMutation = useMutation(
