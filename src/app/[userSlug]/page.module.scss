@@ -1,11 +1,13 @@
 @use "@/styling/colors.scss" as c;
+@use "@/styling/mixins.scss" as m;
 
 .profile_section {
-  background-color: c.$bg2;
-  min-width: 896px;
-  width: fit-content;
-  margin: 2rem auto 0;
-  padding: 1.8rem;
+  @include m.main-area;
+  // background-color: c.$bg2;
+  // min-width: 896px;
+  // width: fit-content;
+  // margin: 2rem auto 0;
+  // padding: 1.8rem;
 
   > header {
     display: flex;
@@ -26,7 +28,7 @@
     }
   }
 
-  > main {
+  > section {
     display: flex;
     flex-flow: column nowrap;
 

@@ -3,57 +3,53 @@
 import GameCard from "@/components/gameCard";
 import { TrackerStatus } from "@/prisma/generated/prisma";
 import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import styles from "./log.module.scss";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { notFound } from "next/navigation";
 
 enum DISPLAY_TYPES {
   board = "board",
   grid = "grid",
 }
-const trackersArea: React.FC<{ userSlug: string }> = ({ userSlug }) => {
+const trackersArea: React.FC<{ userSlug: string; isOwnProfile: boolean }> = ({
+  userSlug,
+  isOwnProfile,
+}) => {
   const [displayType, setDisplayType] = useState<"grid" | "board">("board");
   const trpc = useTRPC();
-  const { data: trackersData, status: trackersStatus } = useQuery(
-    trpc.tracker.getTrackersByUserSlug.queryOptions(
-      { slug: userSlug },
-      { initialData: [], initialDataUpdatedAt: 0 },
-    ),
+  const { data: userData, status: userStatus } = useQuery(
+    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
   );
 
-  console.log({ trackersStatus, trackersData });
+  if (userStatus === "error") {
+    return <p>loading...</p>;
+  }
 
-  const trackerGameIds = trackersData.map((tracker) => tracker.gameId);
+  if (!userData) {
+    notFound();
+  }
 
+  const trackerGameIds = userData.trackers.map((tracker) => tracker.gameId);
   const { data: trackerGamesData, status: trackerGamesStatus } = useQuery(
     trpc.igdb.getGamesById.queryOptions(
       { gameIds: trackerGameIds },
       {
-        enabled: trackersStatus === "success" && trackersData.length > 0,
-        initialData: { games: [] },
+        enabled: trackerGameIds.length > 0,
+        initialData: [],
         initialDataUpdatedAt: 0,
       },
     ),
   );
 
-  // const mappedTrackers: { [key in TrackerStatus]: React.ReactNode[] } =
-  //   Object.fromEntries(
-  //     Object.values(TrackerStatus).map((key) => {
-  //       console.log({ key, trackersData });
-  //       const matchingTrackers = trackersData
-  //         .filter((tracker) => tracker.status.toString() === key)
-  //         .map((tracker) => {
-  //           console.log({ tracker });
-  //           const trackerGame = trackerGamesData?.games.find(
-  //             (game) => game.id === tracker.gameId,
-  //           );
-  //           if (trackerGame) {
-  //             return <GameCard key={trackerGame.id} game={trackerGame} />;
-  //           }
-  //         });
-  //       return [key as TrackerStatus, matchingTrackers as React.ReactNode];
-  //     }),
-  //   );
+  if (trackerGamesStatus === "error") {
+    return <p>error trackers...</p>;
+  }
+
+  if (!trackerGamesData) {
+    console.log("hrm");
+    return;
+  }
 
   const trackerHeaders = () => {
     let headerCounter = 0;
@@ -69,77 +65,78 @@ const trackersArea: React.FC<{ userSlug: string }> = ({ userSlug }) => {
   };
   const trackerBody = () => {
     const content: React.ReactNode[] = [];
-    for (const key of Object.values(TrackerStatus)) {
-      const relatedTrackers = trackersData.filter(
-        (tracker) => tracker.status.toString() === key,
+    console.log({ content });
+    for (const tracker of userData.trackers) {
+      const relatedGame = trackerGamesData.find(
+        (game) => game.id === tracker.gameId,
       );
-      let bodyCounter = 0;
-      for (const tracker of relatedTrackers) {
-        const relatedGame = trackerGamesData.games.find(
-          (game) => game.id === tracker.gameId,
-        );
-        if (!relatedGame) {
-          console.log("wtf");
-          continue;
-        }
-
-        const gameColumn =
-          Object.values(TrackerStatus).findIndex(
-            (key) => key === tracker.status.toString(),
-          ) + 1;
-        const styleObj = {};
-        Object.defineProperty(styleObj, "gridColumn", { value: gameColumn });
-        content.push(
-          <GameCard
-            order={gameColumn}
-            key={tracker.gameId}
-            game={relatedGame}
-            forceHideStatus={displayType === "board"}
-            tracker={tracker}
-            style={
-              displayType === "board"
-                ? {
-                    gridColumn: gameColumn,
-                  }
-                : {}
-            }
-          />,
-        );
+      if (!relatedGame) {
+        continue;
       }
+      let gameColumn = 0;
+
+      switch (tracker.status) {
+        case "BACKLOG": {
+          gameColumn = 0;
+          break;
+        }
+        case "IN_PROGRESS": {
+          gameColumn = 1;
+          break;
+        }
+        case "COMPLETE": {
+          gameColumn = 2;
+          break;
+        }
+      }
+      const styleObj = {
+        gridColumn: gameColumn,
+      };
+      content.push(
+        <GameCard
+          order={gameColumn}
+          key={tracker.gameId}
+          game={relatedGame}
+          forceHideStatus={displayType === "board"}
+          tracker={tracker}
+          style={displayType === "board" ? styleObj : {}}
+        />,
+      );
+    }
+
+    if (content.length === 0) {
+      return <p>damn no trackers???</p>;
     }
     return content;
   };
+
+  const displayTypeDropdown = () => {
+    return (
+      <>
+        <label htmlFor="display-type-select">display type</label>
+        <select
+          id="display-type-select"
+          onChange={(e) =>
+            setDisplayType(e.currentTarget?.value as DISPLAY_TYPES)
+          }
+          defaultValue={displayType}
+        >
+          <option>board</option>
+          <option>grid</option>
+        </select>
+      </>
+    );
+  };
+
+  const hasTrackers = userData.trackers.length > 0;
   return (
-    <>
-      <section>
-        <header>
-          <label htmlFor="display-type-select">display type</label>
-          <select
-            id="display-type-select"
-            onChange={(e) =>
-              setDisplayType(e.currentTarget?.value as DISPLAY_TYPES)
-            }
-            defaultValue={displayType}
-          >
-            <option>board</option>
-            <option>grid</option>
-          </select>
-        </header>
-        <div>
-          {displayType === "board" ? trackerHeaders() : null}
-          {trackerBody()}
-          {/* {Object.entries(mappedTrackers).map(([trackerStatus, trackers]) => { */}
-          {/*   console.log({ trackers }); */}
-          {/*   return ( */}
-          {/*     <div key={trackerStatus}> */}
-          {/*       <h3>{trackerStatus}</h3> */}
-          {/*       {trackers} */}
-          {/*     </div> */}
-          {/*   ); */}
-          {/* })} */}
-        </div>
-      </section>
-    </>
+    <section>
+      <header>{hasTrackers ? displayTypeDropdown() : null}</header>
+      <div>
+        {hasTrackers && displayType === "board" ? trackerHeaders() : null}
+        {trackerBody()}
+      </div>
+    </section>
   );
 };
 

@@ -1,14 +1,10 @@
 @use "@/styling/colors.scss" as c;
+@use "@/styling/mixins.scss" as m;
 
 $col_num: 3;
 
 main.main_log_area {
-  margin: 2rem auto 0;
-  flex-grow: 1;
-  min-width: min(1136px, calc(100% - 4rem));
-  background-color: c.$bg2;
-  padding: 2rem;
-  border-radius: 4px;
+  @include m.main-area;
 
   > section {
     display: flex;

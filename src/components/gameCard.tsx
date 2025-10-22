@@ -4,15 +4,18 @@ import styles from "./gameCard.module.scss";
 import { useTRPC } from "@/trpc/client";
 import { QueryOptions, useQuery } from "@tanstack/react-query";
 import { TRPCQueryOptions } from "@trpc/tanstack-react-query";
-import { ComponentProps } from "react";
+import { ComponentProps, MouseEventHandler, PropsWithChildren } from "react";
 import { Tracker } from "@/prisma/generated/prisma";
+import Link, { type LinkProps } from "next/link";
 
 const GameCard: React.FC<
-  ComponentProps<"span"> & {
+  ComponentProps<"a"> & {
     game: Game;
+    isLink?: boolean;
     order?: number;
     tracker?: Tracker;
-    forceHideStatus?: Boolean;
+    forceHideStatus?: boolean;
+    direction?: "horizontal" | "vertical";
   }
 > = ({
   game,
@@ -20,8 +23,10 @@ const GameCard: React.FC<
   order,
   className,
   tracker,
+  isLink = true,
   forceHideStatus = false,
-  ...spanProps
+  direction = "horizontal",
+  ...cardProps
 }) => {
   // const trpc = useTRPC();
   // const queryOpts: any = {
@@ -50,31 +55,75 @@ const GameCard: React.FC<
   }
 
   let wrapperClassName = styles.game_search_result;
+  if (direction === "vertical") {
+    wrapperClassName += ` ${styles.vertical}`;
+  }
   if (className) {
     wrapperClassName += ` ${className}`;
   }
 
+  const onClickWrapper: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+    if (onClick) {
+      onClick(e);
+    }
+  };
+
+  const LinkWrapper: React.FC<
+    LinkProps & {
+      isLink: boolean;
+      children: React.ReactNode;
+      className: string;
+    }
+  > = ({ isLink, children, className, ...props }) => {
+    if (isLink) {
+      return (
+        <Link className={className} {...props}>
+          {children}
+        </Link>
+      );
+    } else {
+      return (
+        <span className={className} {...props}>
+          {children}
+        </span>
+      );
+    }
+  };
+
   return (
-    <span
+    <LinkWrapper
+      isLink={isLink}
+      href={`/games/${game.id}`}
       data-game-id={game.id}
       data-order={order}
       className={wrapperClassName}
-      key={game.id}
-      onClick={onClick}
-      {...spanProps}
+      onClick={onClickWrapper}
+      onNavigate={(e) => {
+        if (!isLink) {
+          e.preventDefault();
+        }
+      }}
+      {...cardProps}
     >
       <Image
-        src={game.cover.url}
+        src={
+          direction === "horizontal"
+            ? game.cover.url
+            : game.cover.url.replace("small", "big")
+        }
         decoding="async"
         alt={game.name}
+        priority={true}
         width={90}
         height={120}
       />
       <div>
         <h6 className={styles.game_name}>{game.name}</h6>
-        <p className={styles.game_release_date}>
-          {releaseDate ? releaseDate.toLocaleDateString() : "idk when lol"}
-        </p>
+        {/* <p className={styles.game_release_date}> */}
+        {/*   {direction === "horizontal" && releaseDate */}
+        {/*     ? releaseDate.toLocaleDateString() */}
+        {/*     : null} */}
+        {/* </p> */}
         {tracker && !forceHideStatus ? (
           <p
             className={[
@@ -86,10 +135,12 @@ const GameCard: React.FC<
           </p>
         ) : null}
         <p className={styles.game_platforms}>
-          {game.platforms?.map((p) => p.abbreviation).join(", ")}
+          {direction === "horizontal"
+            ? game.platforms?.map((p) => p.abbreviation).join(", ")
+            : null}
         </p>
       </div>
-    </span>
+    </LinkWrapper>
   );
 };
 

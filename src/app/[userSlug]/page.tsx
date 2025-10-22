@@ -9,13 +9,10 @@ const UserPage: NextPage<{
   params: Promise<{ userSlug: string }>;
 }> = async ({ params }) => {
   const { userSlug } = await params;
-  prefetch(trpc.user.getUserBySlug.queryOptions({ slug: userSlug }));
   return (
-    <HydrateClient>
-      <Suspense fallback={<p>loading...</p>}>
-        <Profile userSlug={userSlug} />
-      </Suspense>
-    </HydrateClient>
+    <>
+      <Profile userSlug={userSlug} />
+    </>
   );
 };
 export default UserPage;

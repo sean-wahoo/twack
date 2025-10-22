@@ -1,5 +1,7 @@
 import z from "zod";
 import { baseProcedure, createTRPCRouter } from "../init";
+import { TRPCError } from "@trpc/server";
+import { trpcErrorHandling } from "@/lib/utils";
 
 const getUserByName = baseProcedure
   .input(
@@ -8,25 +10,32 @@ const getUserByName = baseProcedure
     }),
   )
   .query(async (opts) => {
-    const name = opts.input.name;
-    const userFromDb = await opts.ctx.prisma.user.findFirst({
-      where: {
-        name: name,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        image: true,
-        createdAt: true,
-        trackers: true,
-        reviews: true,
-      },
-    });
-    if (userFromDb) {
-      return userFromDb;
-    } else {
-      return null;
+    try {
+      const name = opts.input.name;
+      const userFromDb = await opts.ctx.prisma.user.findFirst({
+        where: {
+          name: name,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          image: true,
+          createdAt: true,
+          trackers: true,
+          reviews: true,
+        },
+      });
+      if (userFromDb) {
+        return userFromDb;
+      } else {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "user not found",
+        });
+      }
+    } catch (e) {
+      throw trpcErrorHandling(e);
     }
   });
 const getUserById = baseProcedure
@@ -36,25 +45,31 @@ const getUserById = baseProcedure
     }),
   )
   .query(async ({ input, ctx }) => {
-    const { userId } = input;
-    const userFromDb = await ctx.prisma.user.findFirst({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        slug: true,
-        createdAt: true,
-        trackers: true,
-        reviews: true,
-      },
-    });
-    if (userFromDb) {
+    try {
+      const { userId } = input;
+      const userFromDb = await ctx.prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          slug: true,
+          createdAt: true,
+          trackers: true,
+          reviews: true,
+        },
+      });
+      if (!userFromDb) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "user not found",
+        });
+      }
       return userFromDb;
-    } else {
-      return null;
+    } catch (e) {
+      throw trpcErrorHandling(e);
     }
   });
 
@@ -65,25 +80,31 @@ const getUserBySlug = baseProcedure
     }),
   )
   .query(async ({ input, ctx }) => {
-    const { slug } = input;
-    const userFromDb = await ctx.prisma.user.findFirst({
-      where: {
-        slug: slug,
-      },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        slug: true,
-        createdAt: true,
-        trackers: true,
-        reviews: true,
-      },
-    });
-    if (userFromDb) {
+    try {
+      const { slug } = input;
+      const userFromDb = await ctx.prisma.user.findFirst({
+        where: {
+          slug: slug,
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          slug: true,
+          createdAt: true,
+          trackers: true,
+          reviews: true,
+        },
+      });
+      if (!userFromDb) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "user not found",
+        });
+      }
       return userFromDb;
-    } else {
-      return null;
+    } catch (e) {
+      throw trpcErrorHandling(e);
     }
   });
 export const userRouter = createTRPCRouter({

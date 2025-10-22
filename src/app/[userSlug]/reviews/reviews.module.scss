@@ -1,0 +1,7 @@
+@use "sass:color";
+@use "@/styling/colors.scss" as c;
+@use "@/styling/mixins.scss" as m;
+
+main.main_reviews_area {
+  @include m.main-area;
+}

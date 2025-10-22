@@ -2,6 +2,7 @@ import z from "zod";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
 import { TrackerStatus } from "@/prisma/generated/prisma";
 import { TRPCError } from "@trpc/server";
+import { trpcErrorHandling } from "@/lib/utils";
 
 const createTracker = protectedProcedure
   .input(
@@ -12,15 +13,20 @@ const createTracker = protectedProcedure
     }),
   )
   .mutation(async ({ ctx, input }) => {
-    const userId = ctx.session.user.id;
-    await ctx.prisma.tracker.create({
-      data: {
-        userId: userId,
-        status: input.status,
-        gameId: input.gameId,
-        complete: !!input.complete,
-      },
-    });
+    try {
+      const userId = ctx.session.user.id;
+      const trackerId = await ctx.prisma.tracker.create({
+        data: {
+          userId: userId,
+          status: input.status,
+          gameId: input.gameId,
+          complete: !!input.complete,
+        },
+      });
+      return trackerId;
+    } catch (e) {
+      throw trpcErrorHandling(e);
+    }
   });
 
 const updateTracker = protectedProcedure
@@ -31,22 +37,27 @@ const updateTracker = protectedProcedure
     }),
   )
   .mutation(async ({ ctx, input }) => {
-    const complete = input.status === "COMPLETE";
+    try {
+      const complete = input.status === "COMPLETE";
 
-    await ctx.prisma.tracker.update({
-      where: {
-        id: input.trackerId,
-        userId: ctx.session.user.id,
-      },
-      data: {
-        status: input.status,
-        complete,
-      },
-    });
+      await ctx.prisma.tracker.update({
+        where: {
+          id: input.trackerId,
+          userId: ctx.session.user.id,
+        },
+        data: {
+          status: input.status,
+          complete,
+        },
+      });
 
-    return {
-      success: true,
-    };
+      return {
+        success: true,
+        trackerId: input.trackerId,
+      };
+    } catch (e) {
+      throw trpcErrorHandling(e);
+    }
   });
 
 const deleteTracker = protectedProcedure
@@ -56,18 +67,22 @@ const deleteTracker = protectedProcedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const { trackerId } = input;
-    const { session } = ctx;
+    try {
+      const { trackerId } = input;
+      const { session } = ctx;
 
-    await ctx.prisma.tracker.delete({
-      where: {
-        id: trackerId,
-        userId: session.user.id,
-      },
-    });
-    return {
-      success: true,
-    };
+      await ctx.prisma.tracker.delete({
+        where: {
+          id: trackerId,
+          userId: session.user.id,
+        },
+      });
+      return {
+        success: true,
+      };
+    } catch (e) {
+      throw trpcErrorHandling(e);
+    }
   });
 
 const getTrackersByUserId = baseProcedure
@@ -77,18 +92,22 @@ const getTrackersByUserId = baseProcedure
     }),
   )
   .query(async ({ input, ctx }) => {
-    const trackers = await ctx.prisma.tracker.findMany({
-      where: {
-        userId: input.userId,
-      },
-    });
-    if (!trackers.length) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `tracker search by user id ${input.userId} failed`,
+    try {
+      const trackers = await ctx.prisma.tracker.findMany({
+        where: {
+          userId: input.userId,
+        },
       });
+      // if (!trackers.length) {
+      //   throw new TRPCError({
+      //     code: "NOT_FOUND",
+      //     message: `tracker search by user id ${input.userId} failed`,
+      //   });
+      // }
+      return trackers;
+    } catch (e) {
+      throw trpcErrorHandling(e);
     }
-    return trackers;
   });
 const getTrackersByUserSlug = baseProcedure
   .input(
@@ -97,20 +116,24 @@ const getTrackersByUserSlug = baseProcedure
     }),
   )
   .query(async ({ input, ctx }) => {
-    const trackers = await ctx.prisma.tracker.findMany({
-      where: {
-        user: {
-          slug: input.slug,
+    try {
+      const trackers = await ctx.prisma.tracker.findMany({
+        where: {
+          user: {
+            slug: input.slug,
+          },
         },
-      },
-    });
-    if (!trackers.length) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `tracker search by user slug ${input.slug} failed`,
       });
+      // if (!trackers.length) {
+      //   throw new TRPCError({
+      //     code: "NOT_FOUND",
+      //     message: `tracker search by user slug ${input.slug} failed`,
+      //   });
+      // }
+      return trackers;
+    } catch (e) {
+      throw trpcErrorHandling(e);
     }
-    return trackers;
   });
 
 export const trackerRouter = createTRPCRouter({

@@ -1,8 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import { cache } from "react";
 import superjson from "superjson";
 import type { CreateNextContextOptions } from "@trpc/server/adapters/next";
-// import { getSession } from "next-auth/react";
 import { getSession } from "@/lib/auth";
 import type { Session } from "next-auth";
 import prisma from "@/prisma/prisma";

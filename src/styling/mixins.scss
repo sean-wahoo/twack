@@ -1,0 +1,18 @@
+@use "@/styling/colors.scss" as c;
+@use "@/styling/responsive.scss" as r;
+
+@mixin main-area($min-width: 1136px) {
+  margin: 2rem auto 0;
+  flex-grow: 1;
+  width: min($min-width, calc(100% - 2rem));
+  background-color: c.$bg2;
+  padding: 2rem;
+  border-radius: 4px;
+
+  @include r.responsive("mobile") {
+    padding: 0.6rem;
+  }
+}
+
+@mixin dropdown {
+}

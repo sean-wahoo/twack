@@ -1,0 +1,225 @@
+@use "@/styling/colors.scss" as c;
+@use "@/styling/mixins.scss" as m;
+@use "@/styling/responsive.scss" as r;
+@use "sass:color";
+
+main.main_game_area {
+  @include m.main-area;
+  z-index: 2;
+
+  > .game_section {
+    > header {
+      font-size: 0.8rem;
+      display: flex;
+      flex-flow: row nowrap;
+      justify-content: space-evenly;
+      align-items: flex-end;
+      text-align: right;
+      padding: 1rem;
+
+      @include r.responsive("mobile") {
+        flex-flow: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      // background-image: radial-gradient(
+      //   circle at bottom left,
+      //   c.$bg4 10%,
+      //   transparent
+      // );
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      > .game_main_artwork {
+        position: absolute;
+        border: none;
+        width: 100%;
+        height: auto;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        opacity: 0.4;
+        @include r.responsive("mobile") {
+          display: none;
+        }
+      }
+
+      > .image_area {
+        display: flex;
+        flex-flow: row nowrap;
+        position: relative;
+
+        @include r.responsive("mobile") {
+          flex-flow: column;
+          justify-content: center;
+        }
+
+        > img {
+          border-radius: 4px;
+          border: 3px solid c.$white;
+        }
+        > .game_buttons_area {
+          display: flex;
+          margin-bottom: auto;
+          flex-flow: column nowrap;
+          flex-shrink: 1;
+          padding: 0;
+          margin-inline: 0.2rem;
+
+          @include r.responsive("mobile") {
+            position: absolute;
+            right: -28px;
+            top: 12px;
+          }
+
+          > button {
+            padding: 4px;
+            width: 30px;
+            height: 30px;
+            // height: 1.5rem;
+            border-radius: 4px;
+
+            &.tracker {
+              background-color: c.$green;
+              &:disabled {
+                background-color: color.adjust(c.$green, $alpha: -0.2);
+              }
+            }
+            &.bookmark {
+              background-color: c.$blue;
+              &:disabled {
+                background-color: color.adjust(c.$blue, $alpha: -0.2);
+              }
+            }
+            &.review {
+              background-color: c.$red;
+              &:disabled {
+                background-color: color.adjust(c.$red, $alpha: -0.2);
+              }
+            }
+          }
+        }
+      }
+      > h1 {
+        @include r.responsive("mobile") {
+          text-align: center;
+        }
+      }
+
+      > div {
+        padding: 0.8rem;
+        @include r.responsive("mobile") {
+          text-align: center;
+          padding-top: 0.4rem;
+        }
+        > div {
+          flex-grow: 1;
+          &:has(> .summary.more) {
+            overflow-y: visible;
+          }
+          > .summary {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            text-overflow: ellipsis;
+            transition: all 0.2s ease;
+
+            max-height: 8rem;
+            overflow-y: auto;
+
+            &:not(.more) {
+              overflow: hidden;
+              -webkit-line-clamp: 3;
+            }
+          }
+          > .summary_show {
+            display: none;
+            color: c.$fg;
+            font-size: 0.8em;
+            cursor: pointer;
+            user-select: none;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+      &:has(> img.game_main_artwork) {
+        &::after {
+          content: "";
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          right: 0;
+          opacity: 1;
+          overflow: hidden;
+          background-image: radial-gradient(
+            ellipse at center top,
+            transparent,
+            c.$bg2 70%
+          );
+        }
+      }
+      * {
+        z-index: 1;
+      }
+
+      > p {
+        flex-basis: 50%;
+        width: auto;
+      }
+    }
+    > .game_main_area {
+      padding: 1rem;
+
+      > .title_area {
+        display: flex;
+        flex-flow: row wrap;
+        align-items: center;
+        column-gap: 0.8rem;
+        @include r.responsive("mobile") {
+          flex-flow: column nowrap;
+          text-align: center;
+        }
+
+        > p {
+          color: c.$fg;
+          font-size: 0.8rem;
+        }
+      }
+
+      > .info_area {
+        > .ratings_area {
+          display: flex;
+          justify-content: space-evenly;
+          text-align: center;
+          align-items: center;
+
+          > div {
+            display: flex;
+            flex-flow: column nowrap;
+            font-size: 0.9rem;
+
+            &.total_ratings {
+              font-size: 1.2rem;
+            }
+
+            > p {
+              font-size: 0.8rem;
+            }
+          }
+          @include r.responsive("mobile") {
+            justify-content: space-around;
+          }
+        }
+
+        @include r.responsive("mobile") {
+          flex-flow: column nowrap;
+          text-align: center;
+        }
+      }
+    }
+  }
+}

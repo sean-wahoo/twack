@@ -1,0 +1,10 @@
+@use "@/styling/mixins.scss" as m;
+
+.game_search_area {
+  @include m.main-area();
+
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 0.8rem;
+  padding: 2rem;
+}

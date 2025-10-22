@@ -6,10 +6,16 @@
   width: 100%;
   flex-flow: row nowrap;
 
+  &.vertical {
+    flex-flow: column nowrap;
+  }
+
   cursor: pointer;
 
   > img {
     width: auto;
+    height: auto;
+    min-height: 80px;
   }
 
   > div {
@@ -17,10 +23,14 @@
     flex-flow: column nowrap;
     padding: 0.4rem;
 
+    > h6,
+    > p {
+      font-size: 0.75em;
+    }
+
     > .game_platforms,
     > .game_release_date,
     > .game_tracker_status {
-      font-size: 0.75rem;
       padding: 0;
 
       &:not(:first-of-type) {

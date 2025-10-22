@@ -12,6 +12,7 @@ $bg: $black;
 $bg2: color.scale(color.scale($bg, $lightness: -55%), $saturation: -60%);
 
 $bg3: color.scale($bg, $lightness: -45%);
+$bg4: color.scale(color.scale($bg, $lightness: -65%), $saturation: -60%);
 
 $dropdown_bg: $bg2;
 $profile_section_bg: $bg2;

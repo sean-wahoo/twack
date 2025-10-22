@@ -5,6 +5,7 @@ import prisma from "@/prisma/prisma";
 import type { User as PrismaUser } from "@/prisma/generated/prisma";
 import { slugify } from "./utils";
 import { AdapterUser } from "next-auth/adapters";
+import { PrismaClientValidationError } from "@/prisma/generated/prisma/runtime/library";
 
 const DBAdapter = PrismaAdapter(prisma);
 
@@ -26,14 +27,25 @@ const authOptions: NextAuthOptions = {
           }
 
           slug = slugify(user.name as string);
-          slugUser = await DBAdapter.getUser!(user.id);
+          try {
+            slugUser = await DBAdapter.getUser!(user.id);
+          } catch (e) {
+            if (
+              e instanceof PrismaClientValidationError &&
+              e.message.includes(
+                "needs at least one of `id` or `email` arguments.",
+              )
+            ) {
+              console.log("just say you couldn't find it jeez");
+              continue;
+            }
+          }
         } while (slugUser && "slug" in slugUser && slugUser.slug === slug);
 
         user.slug = slug;
         return user;
       } catch (e) {
         console.log({ createUserSlugError: e });
-      } finally {
       }
       const createdUser = await DBAdapter.createUser!(user);
 

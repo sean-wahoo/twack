@@ -2,17 +2,23 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import styles from "./navbar.module.scss";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { clickInRect } from "@/lib/utils";
+import { clickInRect, debounce } from "@/lib/utils";
 
 import Link from "next/link";
 import Dialog from "./dialog";
 import Button from "./button";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
+import GameCard from "./gameCard";
+import { useRouter } from "next/navigation";
 
 const Navbar: React.FC = () => {
   const accountMenuRef = useRef<HTMLDialogElement>(null);
   const accountDropdownRef = useRef<HTMLUListElement>(null);
+
+  const [gameSearchValue, setGameSearchValue] = useState<string>("");
 
   const [dropdownShown, setDropdownShown] = useState<boolean>(false);
 
@@ -42,6 +48,14 @@ const Navbar: React.FC = () => {
           href={`/${session?.user?.slug}/log`}
         >
           Your gaming log
+        </Link>
+      </li>
+      <li>
+        <Link
+          onClick={() => setDropdownShown(false)}
+          href={`/${session?.user?.slug}/reviews`}
+        >
+          Your reviews
         </Link>
       </li>
       <li onClick={() => signOut()} className={styles.logout_button}>
@@ -138,6 +152,7 @@ const Navbar: React.FC = () => {
         for (const dropdown of dropdowns) {
           const rect = dropdown.getBoundingClientRect();
           if (!clickInRect(rect, e)) {
+            dropdown.classList.remove(styles.shown);
             setDropdownShown(false);
           }
         }
@@ -148,14 +163,118 @@ const Navbar: React.FC = () => {
       document.removeEventListener("click", clickOutsideDropdownCheck);
   }, [dropdownShown]);
 
+  const gameSearchInputRef = useRef<HTMLInputElement>(null);
+  const gameSearchResultsRef = useRef<HTMLDivElement>(null);
+  const keepSearchResultsAtInput: (
+    this: Document,
+    e?: UIEvent,
+  ) => void = () => {
+    if (gameSearchInputRef.current && gameSearchResultsRef.current) {
+      const inputRect = gameSearchInputRef.current.getBoundingClientRect();
+      const resultsRect = gameSearchResultsRef.current.getBoundingClientRect();
+    }
+  };
+
+  keepSearchResultsAtInput.call({} as Document);
+
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  const gameSearchQueryKey = trpc.igdb.getGamesSearch.queryKey();
+  const { data: gameSearchData, status: gameSearchStatus } = useQuery(
+    trpc.igdb.getGamesSearch.queryOptions(
+      {
+        search: gameSearchValue,
+      },
+      {
+        enabled: gameSearchValue.length > 2,
+      },
+    ),
+  );
+
+  const searchDebouncedCallback = debounce((value: string) => {
+    console.log({ value });
+    setGameSearchValue(value);
+    queryClient.invalidateQueries({ queryKey: gameSearchQueryKey });
+  }, 350);
+
+  const searchInputOnChange: React.ChangeEventHandler<HTMLInputElement> = (e) =>
+    searchDebouncedCallback(e.currentTarget.value);
+
+  useEffect(() => {
+    if (gameSearchResultsRef.current) {
+      if (gameSearchStatus === "success" && gameSearchData?.length) {
+        gameSearchResultsRef.current.classList.add(styles.shown);
+      } else {
+        gameSearchResultsRef.current.classList.remove(styles.shown);
+      }
+    }
+  }, [gameSearchStatus]);
+
+  const searchInputResults = (
+    <div
+      data-dropdown
+      className={styles.navbar_search_results}
+      ref={gameSearchResultsRef}
+    >
+      {gameSearchData?.length
+        ? gameSearchData.map((game, index) => {
+            const onClick = () =>
+              gameSearchResultsRef.current?.classList?.remove?.(styles.shown);
+            if (index === 0) {
+              return (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  isLink={true}
+                  onClick={onClick}
+                />
+              );
+            } else {
+              return (
+                <div key={game.id}>
+                  <hr />
+                  <GameCard game={game} isLink={true} onClick={onClick} />
+                </div>
+              );
+            }
+          })
+        : null}
+    </div>
+  );
+
+  const router = useRouter();
   const searchInput = (
-    <form>
-      <input
-        type="text"
-        placeholder="🔍 Search for games..."
-        className={styles.search_input}
-      />
-    </form>
+    <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.currentTarget);
+          if (formData.get("game-search-input")) {
+            router.push(
+              `/games/search?query=${encodeURIComponent(formData.get("game-search-input") as string)}`,
+            );
+          }
+        }}
+      >
+        <div>
+          <input
+            type="text"
+            ref={gameSearchInputRef}
+            placeholder="🔍 Search for games..."
+            name="game-search-input"
+            className={styles.navbar_search_input}
+            onChange={searchInputOnChange}
+          />
+          {searchInputResults}
+          {/* <input  */}
+          {/*   type="hidden" */}
+          {/*   value={} */}
+          {/* /> */}
+        </div>
+      </form>
+    </>
   );
 
   return (

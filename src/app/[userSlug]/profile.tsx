@@ -39,7 +39,7 @@ const Profile: React.FC<{
   const queryClient = useQueryClient();
 
   const { data, status } = useSession();
-  const { data: user } = useSuspenseQuery(
+  const { data: userData } = useSuspenseQuery(
     trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
   );
 
@@ -47,7 +47,7 @@ const Profile: React.FC<{
     trpc.tracker.createTracker.mutationOptions(),
   );
 
-  if (!user) {
+  if (!userData) {
     notFound();
   }
 
@@ -57,7 +57,7 @@ const Profile: React.FC<{
     }
   };
 
-  const gameSearchQuery = useQuery(
+  const { data: gamesData, status: gamesStatus } = useQuery(
     trpc.igdb.getGamesSearch.queryOptions(
       { search: gameSearchValue },
       {
@@ -76,14 +76,14 @@ const Profile: React.FC<{
     searchDebouncedCallback(e.currentTarget.value);
 
   const gameSearchContent = () => {
-    if (gameSearchQuery.isPending) {
+    if (gamesStatus === "pending") {
       return <>pending...</>;
     }
-    if (!gameSearchQuery.isSuccess) {
+    if (gamesStatus === "error") {
       return <>um uh oh!</>;
     }
     const elements = [];
-    for (const game of gameSearchQuery.data.games ?? []) {
+    for (const game of gamesData ?? []) {
       const onGameClick: React.MouseEventHandler<HTMLSpanElement> = (e) => {
         const { gameId } = e.currentTarget.dataset;
         createTrackerMutation
@@ -106,14 +106,14 @@ const Profile: React.FC<{
     return elements;
   };
 
-  const gameIds = user.trackers.map((t) => t.gameId.toString());
+  const gameIds = userData.trackers.map((t) => t.gameId.toString());
   const { data: trackerGames, status: trackerGamesQueryStatus } = useQuery(
     trpc.igdb.getGamesById.queryOptions(
       {
         gameIds: gameIds,
       },
       {
-        enabled: gameIds.length > 0 && user?.trackers?.length > 0,
+        enabled: gameIds.length > 0 && userData?.trackers?.length > 0,
       },
     ),
   );
@@ -124,7 +124,7 @@ const Profile: React.FC<{
         {trackerGamesQueryStatus === "success" &&
         trackerGames.games.length > 0 ? (
           trackerGames.games.map((game) => {
-            const relatedTracker = user.trackers.find(
+            const relatedTracker = userData.trackers.find(
               (tracker) => game.id.toString() === tracker.gameId,
             );
             if (!relatedTracker) {
@@ -214,7 +214,7 @@ const Profile: React.FC<{
     trpc.tracker.deleteTracker.mutationOptions(),
   );
   const editTrackerDialog = () => {
-    const relatedTracker = user.trackers.find(
+    const relatedTracker = userData.trackers.find(
       (tracker) => currentEditTracker === tracker.id,
     );
     const editingTrackerGame = trackerGames?.games.find(
@@ -309,39 +309,39 @@ const Profile: React.FC<{
   };
 
   return (
-    <section className={styles.profile_section}>
+    <main className={styles.profile_section}>
       <header>
         <Image
-          src={user.image ?? ""}
-          alt={user.name + " profile image hehe"}
+          src={userData.image ?? ""}
+          alt={userData.name + " profile image hehe"}
           width={120}
           height={120}
         />
         <div>
-          <h2>{user.name}</h2>
-          <h5>playing - {user.trackers.length}</h5>
+          <h2>{userData.name}</h2>
+          <h5>playing - {userData.trackers.length}</h5>
           <h5>
             finished -{" "}
-            {user.trackers.filter((tracker) => tracker.complete).length}
+            {userData.trackers.filter((tracker) => tracker.complete).length}
           </h5>
-          <h5>reviews - {user.reviews.length}</h5>
-          <p>member since {user.createdAt.toLocaleDateString()}</p>
+          <h5>reviews - {userData.reviews.length}</h5>
+          <p>member since {userData.createdAt.toLocaleDateString()}</p>
         </div>
       </header>
-      <main>
+      <section>
         <header>
-          <Button
-            onClick={addTrackerButtonClick}
-            className={styles.add_tracker_button}
-          >
-            add tracker
-          </Button>
+          {/* <Button */}
+          {/*   onClick={addTrackerButtonClick} */}
+          {/*   className={styles.add_tracker_button} */}
+          {/* > */}
+          {/*   add tracker */}
+          {/* </Button> */}
         </header>
-        {trackers()}
-      </main>
-      {addTrackerDialog()}
-      {editTrackerDialog()}
-    </section>
+        {/* {trackers()} */}
+      </section>
+      {/* {addTrackerDialog()} */}
+      {/* {editTrackerDialog()} */}
+    </main>
   );
 };
 
