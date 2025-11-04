@@ -1,0 +1,15 @@
+select.multiselect {
+  padding: 0.4rem;
+
+  > option {
+    margin: 0.2rem;
+    padding: 0.6rem;
+
+    &::before {
+      content: "☐ ";
+    }
+    &:checked::before {
+      content: "☑ ";
+    }
+  }
+}

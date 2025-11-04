@@ -23,14 +23,10 @@ main.main_game_area {
         justify-content: center;
       }
 
-      // background-image: radial-gradient(
-      //   circle at bottom left,
-      //   c.$bg4 10%,
-      //   transparent
-      // );
       overflow: hidden;
       position: relative;
       z-index: 1;
+
       > .game_main_artwork {
         position: absolute;
         border: none;
@@ -45,10 +41,20 @@ main.main_game_area {
         }
       }
 
+      &:has(> .image_area > .game_cover_loading) {
+        width: 100%;
+      }
+
       > .image_area {
         display: flex;
         flex-flow: row nowrap;
         position: relative;
+
+        > .game_cover_loading {
+          width: 210px;
+          height: 280px;
+          background-color: c.$bg;
+        }
 
         @include r.responsive("mobile") {
           flex-flow: column;
@@ -79,6 +85,10 @@ main.main_game_area {
             height: 30px;
             // height: 1.5rem;
             border-radius: 4px;
+
+            &:disabled {
+              cursor: default;
+            }
 
             &.tracker {
               background-color: c.$green;
@@ -113,11 +123,29 @@ main.main_game_area {
           text-align: center;
           padding-top: 0.4rem;
         }
+
+        &:has(> .game_text_loading) {
+          width: 100%;
+        }
+
+        > .game_text_loading {
+          background-color: c.$bg;
+          width: 400px;
+          margin-block: 4px;
+          height: 1rem;
+          margin-left: auto;
+
+          &:first-of-type {
+            width: 560px;
+            height: 1.8rem;
+          }
+        }
         > div {
           flex-grow: 1;
           &:has(> .summary.more) {
             overflow-y: visible;
           }
+
           > .summary {
             display: -webkit-box;
             -webkit-box-orient: vertical;
@@ -191,6 +219,9 @@ main.main_game_area {
       }
 
       > .info_area {
+        display: flex;
+        flex-flow: column nowrap;
+        gap: 36px;
         > .ratings_area {
           display: flex;
           justify-content: space-evenly;
@@ -214,7 +245,17 @@ main.main_game_area {
             justify-content: space-around;
           }
         }
-
+        > .game_reviews {
+          margin-block: 1rem;
+          overflow-x: hidden;
+          > h4 {
+            margin-block: 0.4rem;
+          }
+          > div {
+            display: flex;
+            column-gap: 1rem;
+          }
+        }
         @include r.responsive("mobile") {
           flex-flow: column nowrap;
           text-align: center;

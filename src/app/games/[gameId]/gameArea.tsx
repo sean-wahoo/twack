@@ -1,17 +1,55 @@
 "use client";
 import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import styles from "./gamePage.module.scss";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Button from "@/components/button";
-import { useEffect, useRef, useState } from "react";
+import {
+  FormEventHandler,
+  Suspense,
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Game } from "@/lib/types";
+import Dialog from "@/components/dialog";
+import { TrackerStatus } from "@/prisma/generated/prisma";
+import {
+  addReviewFormAction,
+  addTrackerFormAction,
+  editGameCollections,
+  TrackerFormState,
+} from "@/lib/actions";
+import {
+  collectionIcon,
+  likeIcon,
+  reviewIcon,
+  trackerIcon,
+} from "@/lib/svgIcons";
+import Review from "@/components/review";
+import GameCard, { Loading as GameCardLoading } from "@/components/gameCard";
+import Carousel from "@/components/carousel";
+import ReviewsArea from "./reviewsArea";
+import { createPlaceholderShimmer, igdbImageLoader } from "@/lib/utils";
+import MultiSelect from "@/components/multiselect";
 
 const GameArea: React.FC<{ game: Game }> = ({ game }) => {
   const trpc = useTRPC();
 
   const [showDesc, setShowDesc] = useState<boolean>(false);
+  const addTrackerDialogRef = useRef<HTMLDialogElement>(null);
+  const addReviewDialogRef = useRef<HTMLDialogElement>(null);
+  const addToCollectionDialogRef = useRef<HTMLDialogElement>(null);
+
+  const queryClient = useQueryClient();
 
   let releaseDateUnixTs =
     "first_release_date" in game
@@ -25,7 +63,8 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
   }
 
   const { data: session, status } = useSession();
-  const { data: trackersData, status: trackersStatus } = useQuery(
+
+  const { data: trackersData, status: trackersStatus } = useSuspenseQuery(
     trpc.tracker.getTrackersByUserId.queryOptions(
       { userId: session!.user.id },
       {
@@ -34,19 +73,27 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
     ),
   );
 
-  const { data: collectionsData, status: collectionsStatus } = useQuery(
-    trpc.collection.getAuthedUserCollections.queryOptions(undefined, {
-      enabled: status === "authenticated",
+  const getTrackersKey = trpc.tracker.getTrackersByUserId.queryKey();
+
+  const { data: collectionsData, status: collectionsStatus } = useSuspenseQuery(
+    trpc.collection.getCollectionsWithGameId.queryOptions({
+      gameId: game.id,
     }),
   );
 
-  const { data: reviewsData, status: reviewsStatus } = useQuery(
-    trpc.review.getReviewsByUserId.queryOptions(
-      { userId: session?.user.id as string },
-      {
+  const { data: authedCollections, status: authedCollectionsStatus } =
+    useSuspenseQuery(
+      trpc.collection.getAuthedUserCollections.queryOptions(undefined, {
         enabled: status === "authenticated",
-      },
-    ),
+      }),
+    );
+  const getGameCollectionsKey =
+    trpc.collection.getCollectionsWithGameId.queryKey();
+  const getAuthedCollectionsKey =
+    trpc.collection.getAuthedUserCollections.queryKey();
+
+  const { data: reviewsData, status: reviewsStatus } = useSuspenseQuery(
+    trpc.review.getReviewsByIgdbGameId.queryOptions({ gameId: game.id }),
   );
 
   const gameButtons = () => {
@@ -58,73 +105,171 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
       trackersStatus === "success" &&
       !trackersData?.find((tracker) => tracker.gameId === game.id);
 
-    const showBookmarkButton =
-      status === "authenticated" &&
-      collectionsStatus === "success" &&
-      !collectionsData?.find((c) => c.gameIds.includes(game.id));
+    const showCollectionButton =
+      status === "authenticated" && collectionsStatus === "success";
 
-    const showReviewButton =
-      status === "authenticated" &&
-      reviewsStatus === "success" &&
-      !reviewsData?.find((review) => review.gameId === game.id);
-    const addTrackerButton = (
-      <Button className={styles.tracker} disabled={!showTrackerButton}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"
+    const showReviewButton = status === "authenticated";
+    // reviewsStatus === "success" &&
+    // !reviewsData?.find((review) => review.gameId === game.id);
+
+    const [trackerFormState, trackerFormAction] = useActionState(
+      addTrackerFormAction,
+      {
+        gameId: game.id,
+        status: "initial",
+      },
+    );
+
+    const collectionActionGameId = editGameCollections.bind(null, game.id);
+    const [collectionFormState, collectionFormAction, isCollectionsPending] =
+      useActionState(collectionActionGameId, { status: "initial" });
+
+    useEffect(() => {
+      if (addTrackerDialogRef.current) {
+        if (trackerFormState.status === "success") {
+          addTrackerDialogRef.current.requestClose();
+          queryClient.invalidateQueries({
+            queryKey: getTrackersKey,
+          });
+        }
+      }
+    }, [trackerFormState.status]);
+
+    useEffect(() => {
+      if (addToCollectionDialogRef.current) {
+        if (collectionFormState.status === "success" && !isCollectionsPending) {
+          addToCollectionDialogRef.current.requestClose();
+          queryClient.invalidateQueries({
+            queryKey: getAuthedCollectionsKey,
+          });
+        }
+      }
+    }, [collectionFormState.status, isCollectionsPending]);
+
+    const addTrackerDialog = (
+      <Dialog ref={addTrackerDialogRef}>
+        <form className={styles.add_tracker_form} action={trackerFormAction}>
+          <legend>
+            Start tracking <b>{game.name}</b>
+          </legend>
+          <label>
+            Tracking status:
+            <select defaultValue="BACKLOG" name="tracker-status" required>
+              <option value="BACKLOG">Backlog</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETE">Complete</option>
+            </select>
+          </label>
+          <Button>Submit</Button>
+        </form>
+      </Dialog>
+    );
+
+    const addReviewDialog = (
+      <Dialog ref={addReviewDialogRef}>
+        <form className={styles.add_tracker_form} action={addReviewFormAction}>
+          <legend>
+            Your review for <b>{game.name}</b>
+          </legend>
+          <label htmlFor="review-title">Title</label>
+          <input id="review-title" type="text" maxLength={32} name="title" />
+          <label htmlFor="review-desc">Description</label>
+          <textarea id="review-desc" maxLength={512} name="description" />
+          <label htmlFor="review-rating">Overall rating</label>
+          <input
+            id="review-rating"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            name="rating"
           />
-        </svg>
+          <Button>Submit</Button>
+        </form>
+      </Dialog>
+    );
+
+    const collectionsOptions = authedCollections.map((c) => ({
+      value: c.id,
+      text: c.title,
+      checked: c.gameIds.includes(game.id),
+    }));
+    const msDefaultValue = collectionsOptions
+      .filter((o) => o.checked)
+      .map((o) => o.value);
+
+    console.log({ msDefaultValue });
+    const addToCollectionDialog = (
+      <Dialog ref={addToCollectionDialogRef}>
+        <form action={collectionFormAction}>
+          <label htmlFor="collections-select">Add to collections</label>
+          <MultiSelect
+            name="collectionIds"
+            id="collections-select"
+            defaultValue={msDefaultValue}
+          >
+            {collectionsOptions
+              .sort((a, b) => a.text.localeCompare(b.text))
+              .map((o) => {
+                return (
+                  <option key={o.value} value={o.value}>
+                    {o.text}
+                  </option>
+                );
+              })}
+          </MultiSelect>
+          <Button type="submit">Submit</Button>
+        </form>
+      </Dialog>
+    );
+
+    const addTrackerButton = (
+      <Button
+        className={styles.tracker}
+        disabled={!showTrackerButton}
+        onClick={() => {
+          if (addTrackerDialogRef.current) {
+            addTrackerDialogRef.current.showModal();
+          }
+        }}
+      >
+        {trackerIcon}
       </Button>
     );
-    const addBookmarkButton = (
-      <Button className={styles.bookmark} disabled={!showBookmarkButton}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
-          />
-        </svg>
+    const addCollectionButton = (
+      <Button
+        onClick={() => {
+          addToCollectionDialogRef.current?.showModal();
+        }}
+        className={styles.bookmark}
+        disabled={!showCollectionButton}
+      >
+        {collectionIcon}
       </Button>
     );
 
     const addReviewButton = (
-      <Button className={styles.review} disabled={!showReviewButton}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-          />
-        </svg>
+      <Button
+        className={styles.review}
+        disabled={!showReviewButton}
+        onClick={() => {
+          if (addReviewDialogRef.current) {
+            addReviewDialogRef.current.showModal();
+          }
+        }}
+      >
+        {reviewIcon}
       </Button>
     );
 
     return (
       <div className={styles.game_buttons_area}>
         {addTrackerButton}
-        {addBookmarkButton}
+        {addTrackerDialog}
+        {addCollectionButton}
         {addReviewButton}
+        {addReviewDialog}
+        {addToCollectionDialog}
       </div>
     );
   };
@@ -216,24 +361,73 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
   };
 
   const mainArtwork = game.artworks?.[0];
+
+  const { data: similarGamesData, status: similarGamesStatus } =
+    useSuspenseQuery(
+      trpc.igdb.getGamesById.queryOptions(
+        {
+          gameIds: game.similar_games ?? [],
+          limit: 8,
+        },
+        {
+          enabled: !!game.similar_games?.length,
+        },
+      ),
+    );
+
+  const similarGames = () => {
+    if (similarGamesStatus === "error") {
+      return <>error loading similar games</>;
+    }
+    // if (similarGamesStatus === "pending") {
+    //   return <>loading similar games...</>;
+    // }
+    if (similarGamesData.length === 0) {
+      return <>no similar games!!</>;
+    }
+    return (
+      <section className={styles.similar_games_area}>
+        <h4>Similar games</h4>
+        <Carousel anchor="similar_games">
+          {similarGamesData.map((s) => (
+            <Suspense
+              key={s.id}
+              fallback={<GameCardLoading direction="vertical" />}
+            >
+              <GameCard direction="vertical" gameId={s.id} game={s} />
+            </Suspense>
+          ))}
+        </Carousel>
+      </section>
+    );
+  };
+
   return (
     <section className={styles.game_section}>
       <header data-main-artwork-url={mainArtwork?.url}>
         {mainArtwork ? (
           <Image
-            src={mainArtwork.url}
+            loader={igdbImageLoader}
+            src={mainArtwork.image_id}
             width={mainArtwork.width}
             height={mainArtwork.height}
+            placeholder={createPlaceholderShimmer(210, 280)}
             alt={mainArtwork.image_id}
             className={styles.game_main_artwork}
+            preload={true}
+            quality={75}
           />
         ) : null}
         <div className={styles.image_area}>
           <Image
-            src={game.cover.url.replace("small", "big")}
+            loader={igdbImageLoader}
+            src={game.cover.image_id}
             alt={game.name}
+            preload={true}
+            placeholder={createPlaceholderShimmer(210, 280)}
             width={210}
             height={280}
+            quality={75}
           />
           {gameButtons()}
         </div>
@@ -243,13 +437,32 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
         </div>
       </header>
       <main className={styles.game_main_area}>
-        <div className={styles.info_area}>{gameRatings()}</div>
+        <div className={styles.info_area}>
+          {gameRatings()}
+          <ReviewsArea game={game} />
+          {similarGames()}
+        </div>
       </main>
     </section>
   );
 };
 
-export default GameArea;
-const cachedGameArea: React.FC<{ gameId: string }> = async ({ gameId }) => {
-  // const
+export const GameHeaderLoading = () => {
+  return (
+    <section className={styles.game_section}>
+      <header>
+        <div className={styles.image_area}>
+          <div className={styles.game_cover_loading} />
+        </div>
+        <div>
+          <div className={styles.game_text_loading} />
+          <div className={styles.game_text_loading} />
+          <div className={styles.game_text_loading} />
+          <div className={styles.game_text_loading} />
+        </div>
+      </header>
+    </section>
+  );
 };
+
+export default GameArea;

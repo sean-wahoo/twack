@@ -1,5 +1,5 @@
 import z from "zod";
-import { createTRPCRouter, protectedProcedure } from "../init";
+import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
 import { trpcErrorHandling } from "@/lib/utils";
 
 const getAuthedUserCollections = protectedProcedure.query(async ({ ctx }) => {
@@ -18,6 +18,28 @@ const getAuthedUserCollections = protectedProcedure.query(async ({ ctx }) => {
   }
 });
 
+const getCollectionsWithGameId = baseProcedure
+  .input(
+    z.object({
+      gameId: z.string(),
+    }),
+  )
+  .query(async ({ ctx, input }) => {
+    try {
+      const collections = await ctx.prisma.collection.findMany({
+        where: {
+          gameIds: {
+            has: input.gameId,
+          },
+        },
+      });
+      return collections;
+    } catch (e) {
+      throw trpcErrorHandling(e);
+    }
+  });
+
 export const collectionRouter = createTRPCRouter({
   getAuthedUserCollections,
+  getCollectionsWithGameId,
 });

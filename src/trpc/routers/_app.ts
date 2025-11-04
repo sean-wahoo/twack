@@ -4,6 +4,7 @@ import { userRouter } from "./user";
 import { trackerRouter } from "./tracker";
 import { reviewRouter } from "./review";
 import { collectionRouter } from "./collection";
+import { likeRouter } from "./like";
 
 export const appRouter = createTRPCRouter({
   igdb: igdbRouter,
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
   tracker: trackerRouter,
   review: reviewRouter,
   collection: collectionRouter,
+  like: likeRouter,
 });
 
 export type AppRouter = typeof appRouter;

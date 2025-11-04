@@ -7,12 +7,13 @@ import Image from "next/image";
 import { clickInRect, debounce } from "@/lib/utils";
 
 import Link from "next/link";
-import Dialog from "./dialog";
-import Button from "./button";
+import Dialog from "@/components/dialog";
+import Button from "@/components/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
-import GameCard from "./gameCard";
+import GameCard from "@/components/gameCard";
 import { useRouter } from "next/navigation";
+import { chevronDown } from "@/lib/svgIcons";
 
 const Navbar: React.FC = () => {
   const accountMenuRef = useRef<HTMLDialogElement>(null);
@@ -23,7 +24,6 @@ const Navbar: React.FC = () => {
   const [dropdownShown, setDropdownShown] = useState<boolean>(false);
 
   const { data: session, status } = useSession();
-  console.log({ session });
   const accountMenuDropdown = (
     <ul
       className={[
@@ -45,9 +45,9 @@ const Navbar: React.FC = () => {
       <li>
         <Link
           onClick={() => setDropdownShown(false)}
-          href={`/${session?.user?.slug}/log`}
+          href={`/${session?.user?.slug}/shelf`}
         >
-          Your gaming log
+          Your shelf
         </Link>
       </li>
       <li>
@@ -65,30 +65,13 @@ const Navbar: React.FC = () => {
   );
 
   const brand = (
-    <Link href="/" className={styles.brand}>
+    <Link href="/" className={styles.brand} prefetch={true}>
       <h3>T</h3>
       <h3>W</h3>
       <h3>A</h3>
       <h3>C</h3>
       <h3>K</h3>
     </Link>
-  );
-
-  const chevronDown = (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className="size-6"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="m19.5 8.25-7.5 7.5-7.5-7.5"
-      />
-    </svg>
   );
 
   const accountMenu =
@@ -127,16 +110,7 @@ const Navbar: React.FC = () => {
     );
 
   const signInDialog = (
-    <Dialog
-      onClick={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        if (!clickInRect(rect, e as any)) {
-          e.currentTarget.close();
-        }
-      }}
-      ref={accountMenuRef}
-      className={styles.sign_in_dialog}
-    >
+    <Dialog ref={accountMenuRef} className={styles.sign_in_dialog}>
       <Button onClick={() => signIn()}>sign in with discord!</Button>
     </Dialog>
   );
@@ -193,8 +167,8 @@ const Navbar: React.FC = () => {
   );
 
   const searchDebouncedCallback = debounce((value: string) => {
-    console.log({ value });
     setGameSearchValue(value);
+    console.log("searching!");
     queryClient.invalidateQueries({ queryKey: gameSearchQueryKey });
   }, 350);
 
@@ -225,6 +199,7 @@ const Navbar: React.FC = () => {
               return (
                 <GameCard
                   key={game.id}
+                  gameId={game.id}
                   game={game}
                   isLink={true}
                   onClick={onClick}
@@ -234,7 +209,12 @@ const Navbar: React.FC = () => {
               return (
                 <div key={game.id}>
                   <hr />
-                  <GameCard game={game} isLink={true} onClick={onClick} />
+                  <GameCard
+                    gameId={game.id}
+                    game={game}
+                    isLink={true}
+                    onClick={onClick}
+                  />
                 </div>
               );
             }

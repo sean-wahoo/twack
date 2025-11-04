@@ -1,3 +1,5 @@
+import { Like, Review, User } from "@/prisma/generated/prisma";
+
 export type Game = {
   id: string;
   hypes: number;
@@ -24,7 +26,7 @@ export type Game = {
   aggregated_rating_count?: number;
   total_rating?: number;
   platforms?: { name: string; abbreviation: string; slug: string }[];
-  similar_games?: string[];
+  similar_games?: number[];
   first_release_date?: number;
   summary?: string;
   storyline?: string;
@@ -113,3 +115,8 @@ export const parseGame: (rawGameObj: any) => Game = (rawGameObj) => {
 
   return returnObj as Game;
 };
+
+export interface SafeReview extends Omit<Review, "rating"> {
+  user: Pick<User, "image" | "name" | "id">;
+  ratingAsNumber: number;
+}

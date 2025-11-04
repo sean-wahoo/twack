@@ -32,7 +32,7 @@ const gameSearchArea: React.FC<{ query: string }> = ({ query }) => {
             </h1>
             {gameSearchData.length ? (
               gameSearchData.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard key={game.id} gameId={game.id} game={game} />
               ))
             ) : (
               <p>damn nothing came up!</p>

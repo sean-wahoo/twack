@@ -2,6 +2,8 @@ import z from "zod";
 import { baseProcedure, createTRPCRouter } from "../init";
 import { TRPCError } from "@trpc/server";
 import { trpcErrorHandling } from "@/lib/utils";
+import { Decimal } from "@prisma/client/runtime/library";
+import { Review, User } from "@/prisma/generated/prisma";
 
 const getUserByName = baseProcedure
   .input(
@@ -58,7 +60,11 @@ const getUserById = baseProcedure
           slug: true,
           createdAt: true,
           trackers: true,
-          reviews: true,
+          reviews: {
+            omit: {
+              rating: true,
+            },
+          },
         },
       });
       if (!userFromDb) {
@@ -67,6 +73,7 @@ const getUserById = baseProcedure
           message: "user not found",
         });
       }
+      console.log({ userFromDb });
       return userFromDb;
     } catch (e) {
       throw trpcErrorHandling(e);
@@ -93,7 +100,11 @@ const getUserBySlug = baseProcedure
           slug: true,
           createdAt: true,
           trackers: true,
-          reviews: true,
+          reviews: {
+            omit: {
+              rating: true,
+            },
+          },
         },
       });
       if (!userFromDb) {
@@ -102,6 +113,9 @@ const getUserBySlug = baseProcedure
           message: "user not found",
         });
       }
+      // for (const review of userFromDb.reviews) {
+      //   // (review as SafeReview).rating = review.rating.toNumber();
+      // }
       return userFromDb;
     } catch (e) {
       throw trpcErrorHandling(e);

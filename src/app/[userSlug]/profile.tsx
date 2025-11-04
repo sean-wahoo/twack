@@ -1,7 +1,7 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { clickInRect, debounce } from "@/lib/utils";
+import { debounce } from "@/lib/utils";
 import {
   useMutation,
   useQuery,
@@ -12,12 +12,13 @@ import { notFound } from "next/navigation";
 import styles from "./page.module.scss";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
-import type { Game } from "@/lib/types";
-import GameCard from "@/components/gameCard";
+import { Suspense, useRef, useState } from "react";
+import GameCard, { Loading as GameCardLoading } from "@/components/gameCard";
 import Dialog from "@/components/dialog";
 import { TrackerStatus } from "@/prisma/generated/prisma";
 import Button from "@/components/button";
+import { editIcon } from "@/lib/svgIcons";
+import Carousel from "@/components/carousel";
 
 const Profile: React.FC<{
   userSlug: string;
@@ -57,7 +58,7 @@ const Profile: React.FC<{
     }
   };
 
-  const { data: gamesData, status: gamesStatus } = useQuery(
+  const { data: gamesData, status: gamesStatus } = useSuspenseQuery(
     trpc.igdb.getGamesSearch.queryOptions(
       { search: gameSearchValue },
       {
@@ -76,37 +77,17 @@ const Profile: React.FC<{
     searchDebouncedCallback(e.currentTarget.value);
 
   const gameSearchContent = () => {
-    if (gamesStatus === "pending") {
-      return <>pending...</>;
-    }
-    if (gamesStatus === "error") {
-      return <>um uh oh!</>;
-    }
     const elements = [];
     for (const game of gamesData ?? []) {
-      const onGameClick: React.MouseEventHandler<HTMLSpanElement> = (e) => {
-        const { gameId } = e.currentTarget.dataset;
-        createTrackerMutation
-          .mutateAsync({
-            gameId: gameId ?? "",
-            status: "IN_PROGRESS",
-          })
-          .then(() => {
-            addTrackerDialogRef.current?.close();
-            queryClient.invalidateQueries({
-              queryKey: userQueryKey,
-            });
-          });
-      };
       const gameElement = (
-        <GameCard key={game.id} game={game} onClick={onGameClick} />
+        <GameCard key={game.id} gameId={game.id} game={game} />
       );
       elements.push(gameElement);
     }
     return elements;
   };
 
-  const gameIds = userData.trackers.map((t) => t.gameId.toString());
+  const gameIds = userData.trackers.map((t) => Number(t.gameId));
   const { data: trackerGames, status: trackerGamesQueryStatus } = useQuery(
     trpc.igdb.getGamesById.queryOptions(
       {
@@ -117,74 +98,6 @@ const Profile: React.FC<{
       },
     ),
   );
-
-  const trackers = () => {
-    return (
-      <ul className={styles.profile_tracker_list}>
-        {trackerGamesQueryStatus === "success" &&
-        trackerGames.games.length > 0 ? (
-          trackerGames.games.map((game) => {
-            const relatedTracker = userData.trackers.find(
-              (tracker) => game.id.toString() === tracker.gameId,
-            );
-            if (!relatedTracker) {
-              return;
-            }
-
-            const onEditClick: React.MouseEventHandler<HTMLSpanElement> = (
-              e,
-            ) => {
-              const { trackerId } = e.currentTarget.dataset;
-              setCurrentEditTracker(trackerId as string);
-
-              editTrackerDialogRef.current?.showModal();
-            };
-
-            return (
-              <li key={game.id}>
-                <Image
-                  src={game.cover.url}
-                  decoding="async"
-                  alt={game.name}
-                  width={90}
-                  height={120}
-                />
-                <div>
-                  <h2>{game.name}</h2>
-                  <h4>{relatedTracker.status}</h4>
-                  <Button
-                    data-tracker-id={relatedTracker.id}
-                    onClick={onEditClick}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="size-6"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                      />
-                    </svg>
-                  </Button>
-                  <p>
-                    tracking since{" "}
-                    {relatedTracker.createdAt.toLocaleDateString()}
-                  </p>
-                </div>
-              </li>
-            );
-          })
-        ) : (
-          <h2>no trackers!</h2>
-        )}
-      </ul>
-    );
-  };
 
   const addTrackerDialog = () => {
     return (
@@ -217,7 +130,7 @@ const Profile: React.FC<{
     const relatedTracker = userData.trackers.find(
       (tracker) => currentEditTracker === tracker.id,
     );
-    const editingTrackerGame = trackerGames?.games.find(
+    const editingTrackerGame = trackerGames?.find(
       (game) => relatedTracker?.gameId === game.id.toString(),
     );
     if (!relatedTracker || !editingTrackerGame) {
@@ -310,38 +223,163 @@ const Profile: React.FC<{
 
   return (
     <main className={styles.profile_section}>
-      <header>
-        <Image
-          src={userData.image ?? ""}
-          alt={userData.name + " profile image hehe"}
-          width={120}
-          height={120}
-        />
-        <div>
-          <h2>{userData.name}</h2>
-          <h5>playing - {userData.trackers.length}</h5>
-          <h5>
-            finished -{" "}
-            {userData.trackers.filter((tracker) => tracker.complete).length}
-          </h5>
-          <h5>reviews - {userData.reviews.length}</h5>
-          <p>member since {userData.createdAt.toLocaleDateString()}</p>
-        </div>
-      </header>
       <section>
-        <header>
-          {/* <Button */}
-          {/*   onClick={addTrackerButtonClick} */}
-          {/*   className={styles.add_tracker_button} */}
-          {/* > */}
-          {/*   add tracker */}
-          {/* </Button> */}
-        </header>
-        {/* {trackers()} */}
+        <header></header>
       </section>
-      {/* {addTrackerDialog()} */}
-      {/* {editTrackerDialog()} */}
     </main>
+  );
+};
+
+export const ProfileImage = ({ userSlug }: { userSlug: string }) => {
+  const trpc = useTRPC();
+  const { data: userData } = useSuspenseQuery(
+    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
+  );
+
+  return (
+    <Image
+      src={userData.image as string}
+      alt={userData.name + " profile image hehe"}
+      width={120}
+      height={120}
+    />
+  );
+};
+
+export const ProfileHeaderLoading = () => {
+  return (
+    <header>
+      <span className={styles.profile_image_loading} />
+      <div>
+        <span className={styles.profile_name_loading} />
+        <span className={styles.profile_text_loading} />
+        <span className={styles.profile_text_loading} />
+        <span className={styles.profile_text_loading} />
+      </div>
+    </header>
+  );
+};
+
+export const ProfileHeader = ({ userSlug }: { userSlug: string }) => {
+  const trpc = useTRPC();
+  const { data: userData } = useSuspenseQuery(
+    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
+  );
+  return (
+    <header className={styles.profile_header}>
+      <ProfileImage userSlug={userSlug} />
+      <div>
+        <h2>{userData.name}</h2>
+        {/* <h5> */}
+        {/*   playing -{" "} */}
+        {/*   {userData.trackers.filter((tracker) => !tracker.complete).length} */}
+        {/* </h5> */}
+        {/* <h5> */}
+        {/*   finished -{" "} */}
+        {/*   {userData.trackers.filter((tracker) => tracker.complete).length} */}
+        {/* </h5> */}
+        {/* <h5>reviews - {userData.reviews.length}</h5> */}
+        <p>member since {userData.createdAt.toLocaleDateString()}</p>
+      </div>
+    </header>
+  );
+};
+
+export const ProfileBody = ({ userSlug }: { userSlug: string }) => {
+  const trpc = useTRPC();
+  const { data: userData, status: userStatus } = useSuspenseQuery(
+    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
+  );
+  // const completedGameIds = userData.trackers.filter(t => t.status === TrackerStatus.COMPLETE)
+  const userTrackerGameIds = userData.trackers.map((tracker) =>
+    Number(tracker.gameId),
+  );
+  const { data: userTrackedGames, status: userTrackedGamesStatus } =
+    useSuspenseQuery(
+      trpc.igdb.getGamesById.queryOptions(
+        {
+          gameIds: userTrackerGameIds,
+        },
+        {
+          enabled: userTrackerGameIds.length > 0 && userStatus === "success",
+        },
+      ),
+    );
+
+  const completedGames = userTrackedGames
+    .filter((game) => {
+      const relatedTracker = userData.trackers.find(
+        (t) => t.gameId === game.id,
+      );
+      return relatedTracker?.status === TrackerStatus.COMPLETE;
+    })
+    .map((game, index) => (
+      <GameCard
+        key={"ip" + index}
+        gameId={game.id}
+        game={game}
+        direction="vertical"
+      />
+    ));
+  const inProgressGames = userTrackedGames
+    .filter((game) => {
+      const relatedTracker = userData.trackers.find(
+        (t) => t.gameId === game.id,
+      );
+      return relatedTracker?.status === TrackerStatus.IN_PROGRESS;
+    })
+    .map((game, index) => (
+      <GameCard
+        key={"c" + index}
+        gameId={game.id}
+        game={game}
+        direction="vertical"
+      />
+    ));
+
+  return (
+    <section className={styles.profile_body}>
+      <h4>In Progress Games</h4>
+      <Carousel anchor="in_progress">
+        <Suspense
+          fallback={Array.from({ length: 4 }, (_, i) => (
+            <GameCardLoading key={"ip" + i} direction="vertical" />
+          ))}
+        >
+          {inProgressGames}
+        </Suspense>
+      </Carousel>
+      <h4>Completed Games</h4>
+      <Carousel anchor="completed">
+        <Suspense
+          fallback={Array.from({ length: 4 }, (_, i) => (
+            <GameCardLoading key={"c" + i} direction="vertical" />
+          ))}
+        >
+          {completedGames}
+        </Suspense>
+      </Carousel>
+    </section>
+  );
+};
+
+export const ProfileBodyLoading = () => {
+  return (
+    <section className={styles.profile_body}>
+      <h4>In Progress Games</h4>
+      <Carousel anchor="in_progress">
+        {Array.from({ length: 5 }, (_, i) => (
+          <GameCardLoading key={"ip" + i} direction="vertical" />
+        ))}
+      </Carousel>
+      <h4>Completed Games</h4>
+      <Carousel anchor="completed">
+        {Array.from({ length: 5 }, (_, i) => (
+          <GameCardLoading key={"c" + i} direction="vertical" />
+        ))}
+      </Carousel>
+      <GameCardLoading direction="vertical" />
+    </section>
   );
 };
 

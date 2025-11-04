@@ -1,0 +1,137 @@
+@use "@/styling/colors.scss" as c;
+.game_review {
+  padding: 0.6rem;
+  color: c.$fg;
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 0.4rem;
+
+  border-left: 1px solid c.$fg;
+  border-bottom: 1px solid c.$fg;
+
+  font-size: 0.8rem;
+
+  flex: 1 2 580px;
+  margin-block: 0.8rem;
+
+  &:first-of-type {
+    margin-left: 0;
+  }
+
+  p {
+    font-size: 0.8em;
+    color: c.$fg;
+  }
+  > header {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    > p {
+      opacity: 0.5;
+    }
+
+    > .review_author_image_sk {
+      background-color: c.$bg;
+      width: 24px;
+      height: 24px;
+    }
+
+    > .review_author_sk {
+      background-color: c.$bg;
+      height: 1em;
+      width: 120px;
+    }
+  }
+  > div {
+    display: flex;
+    align-items: baseline;
+    padding-left: 32px;
+    > p {
+      margin-left: 8px;
+    }
+
+    > .review_title {
+      background-color: c.$bg;
+      height: 1.2em;
+      width: 240px;
+    }
+  }
+  > p {
+    font-size: 0.9em;
+    color: c.$fg;
+    padding-left: 32px;
+  }
+  > footer {
+    padding-left: 32px;
+    > span {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      > .like_button {
+        background-color: inherit;
+        padding: 0;
+
+        > svg {
+          width: 1rem;
+        }
+
+        &.liked {
+          &:disabled {
+            opacity: 0.8;
+          }
+          > svg {
+            fill: c.$blue;
+          }
+        }
+      }
+    }
+  }
+
+  &:has(> .loading) {
+    overflow-x: hidden;
+  }
+  &.loading {
+    min-width: 60%;
+    > header {
+      > .review_author_image_sk {
+        background-color: c.$bg;
+        width: 24px;
+        height: 24px;
+      }
+
+      > .review_author_sk {
+        background-color: c.$bg;
+        height: 1em;
+        width: 120px;
+      }
+    }
+    > div {
+      display: flex;
+      flex-flow: column nowrap;
+      > .review_title_sk {
+        background-color: c.$bg;
+        height: 1.2em;
+        width: 240px;
+        margin-bottom: 0.4em;
+      }
+      > .review_text_sk {
+        background-color: c.$bg;
+        margin-top: 0.4em;
+        height: 0.8em;
+        width: 60%;
+
+        &:last-of-type {
+          width: 124px;
+        }
+      }
+    }
+    > footer {
+      .likes_sk {
+        background-color: c.$bg;
+        height: 1em;
+        width: 80px;
+      }
+    }
+  }
+}

@@ -1,0 +1,101 @@
+@use "@/styling/colors.scss" as c;
+@use "@/styling/mixins.scss" as m;
+
+$col_num: 3;
+
+.tracker_headers {
+  > label {
+    padding: 0.4rem;
+  }
+
+  > select {
+    padding: 0.2rem;
+  }
+  > div {
+    display: grid;
+    grid-template-columns: repeat($col_num, 1fr);
+    width: auto;
+    place-items: center;
+    grid-auto-flow: row dense;
+    gap: 0.6rem;
+
+    // span {
+    //   grid-row: auto;
+    // }
+
+    h3 {
+      width: 100%;
+      min-width: 176px;
+      text-align: center;
+      padding: 0.4rem;
+      border-bottom: 1px solid c.$blue;
+
+      &.backlog {
+        border-color: c.$red;
+      }
+      &.complete {
+        border-color: c.$green;
+      }
+    }
+    span {
+      padding: 0.4rem;
+      background-color: c.$bg3;
+    }
+  }
+}
+.log_area {
+  display: flex;
+  flex-flow: row nowrap;
+  padding: 12px;
+  flex-grow: 1;
+
+  overflow-x: auto;
+
+  > .shelf_sidebar {
+    display: flex;
+    flex-flow: column nowrap;
+    background-color: c.$bg4;
+    padding: 0.2rem;
+    border-radius: 4px;
+    overflow-y: clip;
+    height: fit-content;
+
+    transition: max-height 0.3s ease;
+    > button {
+      background: none;
+      padding: 0.2rem;
+      > svg {
+        margin: inherit;
+        padding: inherit;
+        box-sizing: content-box;
+        width: 1.5rem;
+      }
+
+      &.active {
+        background-color: c.$bg3;
+      }
+    }
+  }
+  > .shelf_area {
+    width: 100%;
+    display: flex;
+    flex-flow: row nowrap;
+
+    > header {
+      display: flex;
+      flex-flow: row nowrap;
+      align-items: center;
+    }
+    > .add_collection_button {
+      background-color: c.$bg;
+      height: fit-content;
+      font-size: 1rem;
+    }
+    > .collections_area {
+      flex-grow: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+      font-size: 1rem;
+    }
+  }
+}

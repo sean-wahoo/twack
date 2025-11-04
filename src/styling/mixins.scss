@@ -12,6 +12,11 @@
   @include r.responsive("mobile") {
     padding: 0.6rem;
   }
+
+  overflow-x: auto;
+  > * {
+    overflow-x: hidden;
+  }
 }
 
 @mixin dropdown {

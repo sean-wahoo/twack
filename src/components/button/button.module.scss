@@ -9,4 +9,8 @@
   background-color: c.$green;
   cursor: pointer;
   user-select: none;
+
+  > svg {
+    width: 1rem;
+  }
 }

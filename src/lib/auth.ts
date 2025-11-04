@@ -1,4 +1,4 @@
-import { getServerSession, User, Session, NextAuthOptions } from "next-auth";
+import NextAuth, { User, Session } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/prisma/prisma";
@@ -9,7 +9,7 @@ import { PrismaClientValidationError } from "@/prisma/generated/prisma/runtime/l
 
 const DBAdapter = PrismaAdapter(prisma);
 
-const authOptions: NextAuthOptions = {
+const authOptions = {
   adapter: {
     ...DBAdapter,
     createUser: async (user: PrismaUser) => {
@@ -78,6 +78,4 @@ const authOptions: NextAuthOptions = {
   ],
 };
 
-const getSession = () => getServerSession(authOptions);
-
-export { authOptions, getSession };
+export const { auth, handlers, signIn, signOut } = NextAuth(authOptions);

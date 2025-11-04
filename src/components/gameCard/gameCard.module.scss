@@ -5,17 +5,13 @@
   display: flex;
   width: 100%;
   flex-flow: row nowrap;
-
-  &.vertical {
-    flex-flow: column nowrap;
-  }
-
+  margin: 4px;
   cursor: pointer;
 
   > img {
-    width: auto;
-    height: auto;
-    min-height: 80px;
+    width: 90px;
+    height: 120px;
+    // width: auto; height: auto;
   }
 
   > div {
@@ -59,5 +55,53 @@
     > .game_platforms {
       margin-top: auto;
     }
+  }
+  &.vertical {
+    flex-flow: column nowrap;
+    align-items: center;
+  }
+}
+
+.game_card_sk {
+  display: flex;
+  width: 100%;
+  flex-flow: row nowrap;
+
+  > .image_sk {
+    background-color: c.$bg;
+    width: 90px;
+    height: 120px;
+  }
+
+  > div {
+    display: flex;
+    flex-flow: column nowrap;
+    padding: 0.4rem 0;
+
+    &:is(.horizontal) {
+      flex-flow: row nowrap;
+    }
+
+    > * {
+      margin-block: 0.1rem;
+    }
+
+    > .h_sk {
+      background-color: c.$bg;
+      height: 0.8rem;
+      width: 80%;
+      padding: 0.4rem 0;
+    }
+    > .text_sk {
+      height: 0.6rem;
+      background-color: c.$bg;
+      width: 70%;
+      padding: 0.4rem 0;
+    }
+  }
+
+  &.vertical {
+    flex-flow: column nowrap;
+    align-items: center;
   }
 }

@@ -1,10 +1,12 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { getSession } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import type { Session } from "next-auth";
 import prisma from "@/prisma/prisma";
 import { PrismaClient } from "@/prisma/generated/prisma";
+import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
+import { Decimal } from "@prisma/client/runtime/library";
 
 interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
   session: Session | null;
@@ -18,34 +20,42 @@ export async function createContextInner(opts?: CreateInnerContextOptions) {
   };
 }
 
-export async function createTRPCContext(opts?: CreateNextContextOptions) {
-  const session = await getSession();
+export type Context = Awaited<ReturnType<typeof createContextInner>>;
+
+export async function createTRPCContext(opts?: FetchCreateContextFnOptions) {
+  const session = await auth();
+  console.log({ session });
   const contextInner = await createContextInner({ session });
 
   return {
     ...contextInner,
+    session,
     req: opts?.req,
-    res: opts?.res,
   };
 }
 
-export type Context = Awaited<ReturnType<typeof createContextInner>>;
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
 });
 
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
+
 export const baseProcedure = t.procedure;
 
-export const protectedProcedure = t.procedure.use(async (opts) => {
-  const { ctx } = opts;
-  if (!ctx.session) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
+  console.log({ ctx });
+  const { session } = ctx;
+  if (!session?.user) {
+    console.log({ ctx });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "failed to auth sily",
+    });
   }
-  return opts.next({
+  return next({
     ctx: {
-      session: ctx.session,
+      session: session,
     },
   });
 });

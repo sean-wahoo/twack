@@ -1,3 +1,4 @@
+import styles from "./page.module.scss";
 import { NextPage } from "next";
 import { HydrateClient, prefetch, trpc } from "@/trpc/server";
 import { Suspense } from "react";
@@ -12,9 +13,7 @@ const UserLayout: NextPage<{
 
   return (
     <HydrateClient>
-      <ErrorBoundary fallback={<p>lksdfar error!</p>}>
-        <Suspense fallback={<p>loading user</p>}>{children}</Suspense>
-      </ErrorBoundary>
+      <main className={styles.profile_section}>{children}</main>
     </HydrateClient>
   );
 };

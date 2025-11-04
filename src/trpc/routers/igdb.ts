@@ -76,13 +76,15 @@ const getGamesSearch = baseProcedure
       const { search, limit = 5 } = input;
 
       const requestData = buildRequestData({
-        fields: queryGameFields.map((f) => `game.${f}`),
-        search: `*"${search}"*`,
-        where:
-          'game != null & game.total_rating != null & game.game_type.type = ("Main Game", "Expanded Game")',
+        fields: queryGameFields,
+        // search: `*"${search}"*`,
+        // where: "game != null",
+        where: `game != null & game.game_type.type = ("Main Game", "Expanded Game", "Standalone Expansion", "DLC") & game.name ~ *"${search}"*`,
         limit: limit,
+        prefix: "game",
       });
 
+      console.log({ requestData });
       const gamesSearchResponse = await fetch(url, {
         body: requestData,
         method: "POST",
@@ -127,7 +129,8 @@ const getGamesSearch = baseProcedure
 const getGamesById = baseProcedure
   .input(
     z.object({
-      gameIds: z.array(z.string()),
+      gameIds: z.array(z.number()),
+      limit: z.optional(z.number()),
     }),
   )
   .query(async ({ input }) => {
@@ -143,7 +146,7 @@ const getGamesById = baseProcedure
       const requestData = buildRequestData({
         fields: queryGameFields,
         where: `id = (${gameIds.join(",")})`,
-        limit: gameIds.length,
+        limit: input.limit ?? gameIds.length,
       });
       const gamesByIdResponse = await fetch(url, {
         method: "POST",
@@ -153,8 +156,7 @@ const getGamesById = baseProcedure
       const gamesByIdJson = await gamesByIdResponse.json();
 
       const games = [];
-      for (const result of gamesByIdJson) {
-        console.log({ result });
+      for (const result of gamesByIdJson ?? []) {
         const parsedGame = parseGame(result);
         games.push(parsedGame);
       }

@@ -2,6 +2,12 @@
 @use "@/styling/colors.scss" as c;
 @use "@/styling/mixins.scss" as m;
 
-main.main_reviews_area {
+main.reviews_area {
   @include m.main-area;
+  margin: 0;
+  padding: 24px;
+
+  > .reviews_area {
+    margin-block: 48px;
+  }
 }

@@ -3,13 +3,9 @@
 
 .profile_section {
   @include m.main-area;
-  // background-color: c.$bg2;
-  // min-width: 896px;
-  // width: fit-content;
-  // margin: 2rem auto 0;
-  // padding: 1.8rem;
 
-  > header {
+  display: flex;
+  > .profile_header {
     display: flex;
     flex-flow: row;
     gap: 1rem;
@@ -26,6 +22,10 @@
         }
       }
     }
+  }
+
+  > .profile_body {
+    margin-top: 4rem;
   }
 
   > section {
@@ -114,4 +114,23 @@
       }
     }
   }
+}
+
+.profile_image_loading {
+  width: 120px;
+  height: 120px;
+  background-color: c.$bg;
+}
+
+.profile_name_loading {
+  width: 360px;
+  height: 1rem;
+  background-color: c.$bg;
+  margin: 0.2rem 0;
+}
+.profile_text_loading {
+  width: 120px;
+  height: 1rem;
+  background-color: c.$bg;
+  margin: 0.2rem 0;
 }

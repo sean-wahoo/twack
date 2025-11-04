@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
 import "@/styling/globals.scss";
 import SessionProvider from "@/components/sessionProvider";
-import { getSession } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import Navbar from "@/components/navbar";
 import { TRPCReactProvider } from "@/trpc/client";
 import { Suspense } from "react";
@@ -39,6 +39,6 @@ export default async function RootLayout({
 }
 
 const SessionWrapper = async ({ children }: { children: React.ReactNode }) => {
-  const session = await getSession();
+  const session = await auth();
   return <SessionProvider session={session}>{children}</SessionProvider>;
 };

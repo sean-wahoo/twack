@@ -7,8 +7,8 @@ const UserReviewsPage: NextPage<{
 }> = async ({ params }) => {
   const { userSlug } = await params;
   return (
-    <main className={styles.main_reviews_area}>
-      <h2>Your reviews</h2>
+    <main className={styles.reviews_area}>
+      <h4>Your reviews</h4>
       <ReviewsArea userSlug={userSlug} />
     </main>
   );

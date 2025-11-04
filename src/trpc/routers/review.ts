@@ -2,6 +2,8 @@ import z from "zod";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
 import { TRPCError } from "@trpc/server";
 import { trpcErrorHandling } from "@/lib/utils";
+import { SafeReview } from "@/lib/types";
+import { Like, User } from "@/prisma/generated/prisma";
 
 const createReview = protectedProcedure
   .input(
@@ -30,6 +32,31 @@ const createReview = protectedProcedure
     }
   });
 
+const getReviewsByIgdbGameId = baseProcedure
+  .input(
+    z.object({
+      gameId: z.string(),
+    }),
+  )
+  .query(async ({ ctx, input }) => {
+    try {
+      const reviews = (await ctx.prisma.review.findMany({
+        where: {
+          gameId: input.gameId,
+        },
+        include: {
+          user: true,
+        },
+        omit: {
+          rating: true,
+        },
+      })) as SafeReview[];
+      return reviews;
+    } catch (e) {
+      throw trpcErrorHandling(e);
+    }
+  });
+
 const getReviewsByUserId = baseProcedure
   .input(
     z.object({
@@ -42,6 +69,9 @@ const getReviewsByUserId = baseProcedure
         where: {
           userId: input.userId,
         },
+        select: {
+          rating: false,
+        },
       });
       return reviews;
     } catch (e) {
@@ -51,5 +81,6 @@ const getReviewsByUserId = baseProcedure
 
 export const reviewRouter = createTRPCRouter({
   createReview,
+  getReviewsByIgdbGameId,
   getReviewsByUserId,
 });

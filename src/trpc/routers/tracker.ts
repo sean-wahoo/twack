@@ -1,8 +1,9 @@
 import z from "zod";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
-import { TrackerStatus } from "@/prisma/generated/prisma";
-import { TRPCError } from "@trpc/server";
+import { Tracker, TrackerStatus } from "@/prisma/generated/prisma";
 import { trpcErrorHandling } from "@/lib/utils";
+import { igdbRouter } from "./igdb";
+import { type Game } from "@/lib/types";
 
 const createTracker = protectedProcedure
   .input(
@@ -136,10 +137,75 @@ const getTrackersByUserSlug = baseProcedure
     }
   });
 
+interface TrackerWithGame extends Tracker {
+  game?: Game;
+}
+const getAuthedUserTrackers = protectedProcedure
+  .input(
+    z.object({
+      withGames: z.optional(z.boolean()),
+    }),
+  )
+  .query(async ({ ctx, input }) => {
+    try {
+      const userId = ctx.session.user.id;
+      const trackers = await ctx.prisma.tracker.findMany({
+        where: {
+          userId: userId,
+        },
+      });
+      const returnObj = {
+        trackers,
+        games: [],
+      } as {
+        trackers: Tracker[];
+        games: Game[];
+      };
+      if (input.withGames) {
+        const caller = igdbRouter.createCaller(ctx);
+
+        const gameIds = trackers.map((t) => Number(t.gameId));
+
+        const games = await caller.getGamesById({ gameIds: gameIds });
+        Object.defineProperty(returnObj, "games", {
+          value: games,
+        });
+      }
+      return returnObj;
+    } catch (e) {
+      trpcErrorHandling(e);
+    }
+  });
+
+const dragDropKanban = protectedProcedure
+  .input(
+    z.object({
+      prevStatus: z.enum(TrackerStatus),
+      status: z.enum(TrackerStatus),
+      trackerId: z.string(),
+    }),
+  )
+  .mutation(async ({ ctx, input }) => {
+    const { status, trackerId } = input;
+    const userId = ctx.session.user.id;
+
+    await ctx.prisma.tracker.update({
+      where: {
+        id: trackerId,
+        userId: userId,
+      },
+      data: {
+        status: status,
+      },
+    });
+  });
+
 export const trackerRouter = createTRPCRouter({
   createTracker,
   updateTracker,
   deleteTracker,
   getTrackersByUserId,
   getTrackersByUserSlug,
+  getAuthedUserTrackers,
+  dragDropKanban,
 });
