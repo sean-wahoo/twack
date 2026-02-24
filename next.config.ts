@@ -8,6 +8,15 @@ const nextConfig: NextConfig = {
   sassOptions: {
     implementation: "sass-embedded",
   },
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/home",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     qualities: [25, 50, 75, 100],
     remotePatterns: [
