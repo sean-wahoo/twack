@@ -1,7 +1,6 @@
 import z from "zod";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
-import { Prisma } from "@/prisma/generated/prisma";
-import { trpcErrorHandling } from "@/lib/utils";
+import { trpcErrorHandling } from "@/trpc/utils";
 
 const toggleLike = protectedProcedure
   .input(

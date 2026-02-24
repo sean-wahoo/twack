@@ -1,9 +1,9 @@
 import z from "zod";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
 import { TRPCError } from "@trpc/server";
-import { trpcErrorHandling } from "@/lib/utils";
+import { trpcErrorHandling } from "@/trpc/utils";
 import { SafeReview } from "@/lib/types";
-import { Like, User } from "@/prisma/generated/prisma";
+import { Like, User } from "@/prisma/generated/prisma/client";
 
 const createReview = protectedProcedure
   .input(
@@ -19,7 +19,12 @@ const createReview = protectedProcedure
     try {
       const reviewId = await ctx.prisma.review.create({
         data: {
-          userId: ctx.session.user.id,
+          // userId: ctx.session.user.id,
+          user: {
+            connect: {
+              id: ctx.session.user.id,
+            },
+          },
           rating,
           gameId,
           title,
@@ -45,7 +50,13 @@ const getReviewsByIgdbGameId = baseProcedure
           gameId: input.gameId,
         },
         include: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
         },
         omit: {
           rating: true,

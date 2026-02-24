@@ -1,4 +1,5 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client/runtime/client";
+// import { Decimal } from "@prisma";
 import superjson from "superjson";
 
 superjson.registerCustom<Decimal, number>(

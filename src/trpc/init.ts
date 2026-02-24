@@ -1,35 +1,34 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { auth } from "@/lib/auth";
-import type { Session } from "next-auth";
-import prisma from "@/prisma/prisma";
-import { PrismaClient } from "@/prisma/generated/prisma";
+import { auth, getSession } from "@/lib/auth/server";
+import { prisma } from "@/prisma/prisma";
+import { PrismaClient } from "@/prisma/generated/prisma/client";
 import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import { Decimal } from "@prisma/client/runtime/library";
 
-interface CreateInnerContextOptions extends Partial<CreateNextContextOptions> {
-  session: Session | null;
-  prisma?: PrismaClient | null;
-}
+type CreateInnerContextOptions = Partial<CreateNextContextOptions> & {
+  session: typeof auth.$Infer.Session | null;
+  prisma: PrismaClient;
+};
 
 export async function createContextInner(opts?: CreateInnerContextOptions) {
   return {
-    prisma,
-    session: opts?.session,
+    prisma: opts?.prisma ?? (prisma as PrismaClient),
+    session: opts?.session ?? null,
   };
 }
 
 export type Context = Awaited<ReturnType<typeof createContextInner>>;
 
 export async function createTRPCContext(opts?: FetchCreateContextFnOptions) {
-  const session = await auth();
-  console.log({ session });
-  const contextInner = await createContextInner({ session });
+  const session = await getSession();
+  const contextInner = await createContextInner({
+    session: session ?? null,
+    prisma,
+  });
 
   return {
     ...contextInner,
-    session,
     req: opts?.req,
   };
 }
@@ -44,10 +43,8 @@ export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
 
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-  console.log({ ctx });
   const { session } = ctx;
-  if (!session?.user) {
-    console.log({ ctx });
+  if (!session) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "failed to auth sily",

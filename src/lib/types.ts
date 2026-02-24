@@ -1,4 +1,4 @@
-import { Like, Review, User } from "@/prisma/generated/prisma";
+import { Like, Review, User } from "@/prisma/generated/prisma/client";
 
 export type Game = {
   id: string;
@@ -14,6 +14,13 @@ export type Game = {
     width: number;
     height: number;
   };
+  extra_covers?: {
+    id: string;
+    image_id: string;
+    url: string;
+    width: number;
+    height: number;
+  }[];
   game_type: string;
   keywords: {
     name: string;
@@ -25,7 +32,16 @@ export type Game = {
   aggregated_rating?: number;
   aggregated_rating_count?: number;
   total_rating?: number;
-  platforms?: { name: string; abbreviation: string; slug: string }[];
+  platforms?: {
+    name: string;
+    abbreviation: string;
+    slug: string;
+    platform_logo: { image_id: string };
+    generation: number;
+  }[];
+  franchise?: {
+    name: string;
+  };
   similar_games?: number[];
   first_release_date?: number;
   summary?: string;
@@ -75,7 +91,7 @@ export const parseGame: (rawGameObj: any) => Game = (rawGameObj) => {
   if ("cover" in rawGameObj) {
     returnObj.cover = {
       ...rawGameObj.cover,
-      url: "http:" + rawGameObj.cover?.url.replace("thumb", "cover_small"),
+      url: "https:" + rawGameObj.cover?.url.replace("thumb", "cover_small"),
     };
   }
   if ("platforms" in rawGameObj) {
@@ -95,6 +111,9 @@ export const parseGame: (rawGameObj: any) => Game = (rawGameObj) => {
   }
   if ("storyline" in rawGameObj) {
     returnObj.storyline = rawGameObj.storyline;
+  }
+  if ("franchise" in rawGameObj) {
+    returnObj.franchise = rawGameObj.franchise;
   }
   if ("artworks" in rawGameObj) {
     returnObj.artworks = rawGameObj.artworks.map((a: any) => {
@@ -116,7 +135,18 @@ export const parseGame: (rawGameObj: any) => Game = (rawGameObj) => {
   return returnObj as Game;
 };
 
+export type PopPrimitive = {
+  calculated_at: number;
+  created_at: number;
+  external_popularity_source: number;
+  game_id: number;
+  id: number;
+  popularity_type: number;
+  updated_at: number;
+  value: number;
+};
+
 export interface SafeReview extends Omit<Review, "rating"> {
   user: Pick<User, "image" | "name" | "id">;
-  ratingAsNumber: number;
+  // ratingAsNumber: number;
 }

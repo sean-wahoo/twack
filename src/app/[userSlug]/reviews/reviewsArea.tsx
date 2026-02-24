@@ -5,7 +5,6 @@ import styles from "./reviews.module.scss";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { notFound } from "next/navigation";
 import Review, { ReviewLoading } from "@/components/review";
-import { User } from "@/prisma/generated/prisma";
 import { Suspense } from "react";
 
 const reviewsArea: React.FC<{ userSlug: string }> = ({ userSlug }) => {

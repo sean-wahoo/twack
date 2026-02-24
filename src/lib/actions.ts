@@ -1,8 +1,8 @@
 "use server";
 
-import { TrackerStatus } from "@/prisma/generated/prisma";
+import { TrackerStatus } from "@/prisma/generated/prisma/enums";
 import { getSession } from "@/lib/auth/server";
-import prisma from "@/prisma/prisma";
+import { prisma } from "@/prisma/prisma";
 
 export type FormReturnState = {
   status?: "initial" | "error" | "success";
@@ -157,17 +157,10 @@ export async function editGameCollections(
         gameIds: true,
       },
     });
-
-    console.log({
-      collectionsToSet,
-      collectionsToUnset,
-      collectionIds,
-      userId,
-    });
     await prisma.collection.updateMany({
       where: {
         id: {
-          in: collectionsToSet.map((c) => c.id),
+          in: collectionsToSet.map((c: { id: string }) => c.id),
         },
         userId: session.userId,
         NOT: {

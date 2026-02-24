@@ -22,9 +22,6 @@ const MultiSelect: React.FC<
   onChange,
   ...props
 }) => {
-  // const [defaultValue, setDefaultValue] = useState<string[]>(
-  //   _defaultValue as string[],
-  // );
   const [selectValue, setSelectValue] = useState<string[]>(
     (_defaultValue as string[]) ?? [],
   );
@@ -39,23 +36,6 @@ const MultiSelect: React.FC<
       Array.from(e.currentTarget.selectedOptions).map((o) => o.value),
     );
   };
-
-  useEffect(() => {
-    console.log("bruh");
-    // if (_defaultValue !== defaultValue) {
-    //   setDefaultValue(_defaultValue as string[]);
-    // }
-  }, []);
-
-  // useEffect(() => {
-  //   if (selectRef.current) {
-  //     const selectValue = Array.from(selectRef.current.selectedOptions).map(
-  //       (o) => o.value,
-  //     );
-  //     console.log({ selectValue });
-  //     return () => setDefaultValue(selectValue);
-  //   }
-  // }, []);
 
   return (
     <select
