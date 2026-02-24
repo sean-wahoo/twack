@@ -10,7 +10,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Tracker } from "@/prisma/generated/prisma";
+import { Tracker } from "@/prisma/generated/prisma/client";
 import Link, { type LinkProps } from "next/link";
 import { useTRPC } from "@/trpc/client";
 import {
@@ -20,16 +20,17 @@ import {
   type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
 import {
+  c,
   createPlaceholderShimmer,
-  getPlaceholderImageUrl,
+  getGameCardImage,
+  getGamePlatformIcons,
   igdbImageLoader,
-  rgbDataURL,
 } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const GameCard: React.FC<
-  ComponentProps<"a"> & {
-    gameId: string;
-    game?: Game;
+  ComponentProps<"div"> & {
+    game: Game;
     isLink?: boolean;
     order?: number;
     tracker?: Tracker;
@@ -37,8 +38,7 @@ const GameCard: React.FC<
     direction?: "horizontal" | "vertical";
   }
 > = ({
-  gameId,
-  game: preGame,
+  game,
   onClick,
   order,
   className,
@@ -48,148 +48,113 @@ const GameCard: React.FC<
   direction = "horizontal",
   ...cardProps
 }) => {
-  // const [game, setGame] = useState<Game | undefined>(preGame);
   let releaseDate: Date | undefined;
-
-  const hasPreGame = preGame !== undefined;
-
-  const queryOptions = {
-    enabled: !hasPreGame,
-  };
-
-  if (hasPreGame) {
-    Object.defineProperty(queryOptions, "initialData", { value: [preGame] });
-  }
-
-  const trpc = useTRPC();
-  let { data: gameData, status: gameStatus } = useQuery(
-    trpc.igdb.getGamesById.queryOptions(
-      { gameIds: [Number(gameId)] },
-      queryOptions,
-    ),
-  );
-
-  if (gameStatus === "error") {
-    return <p>game card error?</p>;
-  }
-  let wrapperClassName = styles.game_search_result;
+  let wrapperClassName = styles.game_card;
   if (className) {
     wrapperClassName += ` ${className}`;
   }
 
-  if (gameStatus === "pending" && !hasPreGame) {
-    return <Loading direction={direction} className={wrapperClassName} />;
-  }
-
-  const game = hasPreGame ? preGame : (gameData?.[0] as Game);
-
-  if (game && "first_release_date" in game) {
-    releaseDate = new Date((game.first_release_date ?? 0) * 1000);
-  }
-  if (game && "release_dates" in game) {
+  if ("release_dates" in game) {
     game.release_dates.sort((a, b) => a.date - b.date);
     releaseDate = new Date(game.release_dates[0].date * 1000);
   }
+  if ("first_release_date" in game) {
+    releaseDate = new Date((game.first_release_date ?? 0) * 1000);
+  }
 
-  const onClickWrapper: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+  const router = useRouter();
+  const onClickWrapper: React.MouseEventHandler<HTMLDivElement> = (e) => {
     if (onClick) {
       onClick(e);
     }
+    if (isLink) {
+      router.push(`/games/${game.id}`);
+    }
   };
 
-  const LinkWrapper: React.FC<
-    LinkProps & {
-      isLink: boolean;
-      children: React.ReactNode;
-      className: string;
-    }
-  > = ({ isLink, children, className, ...props }) => {
-    if (isLink) {
-      return (
-        <Link prefetch={false} className={className} {...props}>
-          {children}
-        </Link>
-      );
-    } else {
-      return (
-        <span className={className} {...props}>
-          {children}
-        </span>
-      );
-    }
-  };
+  if (game.release_dates?.length === 0) {
+    console.log({ game });
+  }
 
   return (
-    <Suspense
-      fallback={<Loading direction={direction} className={wrapperClassName} />}
+    <div
+      data-game-id={game.id}
+      data-order={order}
+      className={c(wrapperClassName)}
+      onClick={onClickWrapper}
+      tabIndex={0}
+      {...cardProps}
     >
-      <LinkWrapper
-        isLink={isLink}
-        href={{
-          pathname: `/games/${game.id ?? gameId}`,
-        }}
-        data-game-id={game.id ?? gameId}
-        data-order={order}
-        className={[
-          wrapperClassName,
-          direction === "vertical" ? styles.vertical : "",
-        ].join(" ")}
-        onClick={onClickWrapper}
-        onNavigate={(e) => {
-          if (!isLink) {
-            e.preventDefault();
-          }
-        }}
-        {...cardProps}
-      >
-        <Image
-          loader={igdbImageLoader}
-          src={game.cover.image_id}
-          preload={true}
-          alt={game.name}
-          decoding="async"
-          quality={25}
-          placeholder={createPlaceholderShimmer(90, 120)}
-          width={90}
-          height={120}
-        />
-        <div>
-          <h6 className={styles.game_name}>{game.name}</h6>
-          {/* <p className={styles.game_release_date}> */}
-          {/*   {direction === "horizontal" && releaseDate */}
-          {/*     ? releaseDate.toLocaleDateString() */}
-          {/*     : null} */}
-          {/* </p> */}
-          {tracker && !forceHideStatus ? (
-            <>
-              <p
-                className={[
-                  styles.game_tracker_status,
-                  styles[tracker.status.toLowerCase()],
-                ].join(" ")}
-              >
-                {tracker.status}
-              </p>
-              <p className={styles.game_platforms}>
-                {direction === "horizontal"
-                  ? game.platforms?.map((p) => p.abbreviation).join(", ")
-                  : null}
-              </p>
-            </>
-          ) : null}
+      {"cover" in game ? (
+        <div className={c(styles.img_container, styles[direction])}>
+          <Image
+            loader={igdbImageLoader}
+            src={getGameCardImage(game) as string}
+            preload={true}
+            alt={game.name}
+            decoding="async"
+            quality={100}
+            placeholder={createPlaceholderShimmer(90, 120)}
+            width={direction === "vertical" ? 90 : 240}
+            height={direction === "vertical" ? 120 : 135}
+            // fill={true}
+          />
+          <div className={styles.game_card_img_overlay} />
         </div>
-      </LinkWrapper>
-    </Suspense>
+      ) : null}
+      <div className={styles.game_info}>
+        <main>
+          <p className={styles.game_name}>{game.name}</p>
+          {game.franchise ? <p>{game.franchise.name}</p> : null}
+        </main>
+        {/* {game.platforms */}
+        {/*   ?.sort((a, b) => a.generation - b.generation) */}
+        {/*   .slice(0, 2) */}
+        {/*   .map((platform) => { */}
+        {/*     return ( */}
+        {/*       <p>{platform.abbreviation}</p> */}
+        {/*       // <Image */}
+        {/*       //   loader={igdbImageLoader} */}
+        {/*       //   src={platform.platform_logo.image_id} */}
+        {/*       //   alt={platform.abbreviation} */}
+        {/*       //   width={12} */}
+        {/*       //   height={12} */}
+        {/*       // /> */}
+        {/*     ); */}
+        {/*   })} */}
+        <footer>
+          {game.release_dates?.[0].date ? (
+            <p className={styles.release_date}>
+              {releaseDate?.toLocaleDateString()}
+            </p>
+          ) : null}
+          <div className={styles.game_platforms}>
+            {getGamePlatformIcons(game)}
+          </div>
+        </footer>
+      </div>
+    </div>
   );
 };
 
 export const LoadingHorizontal = ({ className }: { className: string }) => {
   return (
-    <span className={[className, styles.game_card_sk].join(" ")}>
+    <span
+      className={c(
+        styles.game_card,
+        styles.horizontal,
+        styles.game_card_sk,
+        className,
+      )}
+    >
       <span className={styles.image_sk} />
-      <div className={styles.horizontal}>
+      <div>
         <span className={styles.h_sk} />
         <span className={styles.text_sk} />
+        <span className={styles.text_sk} />
+        <footer>
+          <span className={styles.text_sk} />
+        </footer>
       </div>
     </span>
   );
@@ -197,12 +162,19 @@ export const LoadingHorizontal = ({ className }: { className: string }) => {
 export const LoadingVertical = ({ className }: { className: string }) => {
   return (
     <div
-      className={[className, styles.game_card_sk, styles.vertical].join(" ")}
+      className={c(
+        styles.game_card,
+        styles.vertical,
+        styles.game_card_sk,
+        className,
+      )}
     >
       <span className={styles.image_sk} />
       <div>
         <span className={styles.h_sk} />
-        <span className={styles.text_sk} />
+        <footer>
+          <span className={styles.text_sk} />
+        </footer>
       </div>
     </div>
   );

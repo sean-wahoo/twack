@@ -11,14 +11,16 @@ import {
 import { notFound } from "next/navigation";
 import styles from "./page.module.scss";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
-import { Suspense, useRef, useState } from "react";
+import { MouseEventHandler, Suspense, useRef, useState } from "react";
 import GameCard, { Loading as GameCardLoading } from "@/components/gameCard";
 import Dialog from "@/components/dialog";
-import { TrackerStatus } from "@/prisma/generated/prisma";
+import { TrackerStatus } from "@/prisma/generated/prisma/enums";
 import Button from "@/components/button";
 import { editIcon } from "@/lib/svgIcons";
 import Carousel from "@/components/carousel";
+import { profileBodyAtom } from "@/state/profile";
+import { useAtom } from "jotai";
+import Showcase from "@/components/showcase";
 
 const Profile: React.FC<{
   userSlug: string;
@@ -39,9 +41,11 @@ const Profile: React.FC<{
 
   const queryClient = useQueryClient();
 
-  const { data, status } = useSession();
   const { data: userData } = useSuspenseQuery(
-    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
+    trpc.user.getUserBySlug.queryOptions(
+      { slug: userSlug },
+      { enabled: userSlug.length > 0 },
+    ),
   );
 
   const createTrackerMutation = useMutation(
@@ -79,9 +83,7 @@ const Profile: React.FC<{
   const gameSearchContent = () => {
     const elements = [];
     for (const game of gamesData ?? []) {
-      const gameElement = (
-        <GameCard key={game.id} gameId={game.id} game={game} />
-      );
+      const gameElement = <GameCard key={game.id} game={game} />;
       elements.push(gameElement);
     }
     return elements;
@@ -263,29 +265,71 @@ export const ProfileHeaderLoading = () => {
 export const ProfileHeader = ({ userSlug }: { userSlug: string }) => {
   const trpc = useTRPC();
   const { data: userData } = useSuspenseQuery(
-    trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
+    trpc.user.getUserBySlug.queryOptions(
+      { slug: userSlug },
+      { enabled: userSlug.length > 0 },
+    ),
   );
   return (
     <header className={styles.profile_header}>
       <ProfileImage userSlug={userSlug} />
       <div>
         <h2>{userData.name}</h2>
-        {/* <h5> */}
-        {/*   playing -{" "} */}
-        {/*   {userData.trackers.filter((tracker) => !tracker.complete).length} */}
-        {/* </h5> */}
-        {/* <h5> */}
-        {/*   finished -{" "} */}
-        {/*   {userData.trackers.filter((tracker) => tracker.complete).length} */}
-        {/* </h5> */}
-        {/* <h5>reviews - {userData.reviews.length}</h5> */}
+        <p>
+          playing -{" "}
+          {userData.trackers.filter((tracker) => !tracker.complete).length}
+        </p>
+        <p>
+          finished -{" "}
+          {userData.trackers.filter((tracker) => tracker.complete).length}
+        </p>
+        <p>reviews - {userData.reviews.length}</p>
         <p>member since {userData.createdAt.toLocaleDateString()}</p>
       </div>
     </header>
   );
 };
 
+export const ProfileToggleButton = () => {
+  const [profileBodyType, setProfileBodyType] = useAtom(profileBodyAtom);
+  const onClick: MouseEventHandler<HTMLButtonElement> = (e) => {
+    e.preventDefault();
+    setProfileBodyType(e.currentTarget.value);
+  };
+  return (
+    <div className={styles.profile_type_button_container}>
+      <Button
+        className={
+          profileBodyType === "showcase" ? styles.profile_type_selected : ""
+        }
+        onClick={onClick}
+        value="showcase"
+      >
+        Showcase
+      </Button>
+      <Button
+        className={
+          profileBodyType === "trackers" ? styles.profile_type_selected : ""
+        }
+        onClick={onClick}
+        value="trackers"
+      >
+        Trackers
+      </Button>
+    </div>
+  );
+};
+
 export const ProfileBody = ({ userSlug }: { userSlug: string }) => {
+  const [profileBodyType] = useAtom(profileBodyAtom);
+  return profileBodyType === "showcase" ? (
+    <Showcase userSlug={userSlug} />
+  ) : (
+    <ProfileTrackers userSlug={userSlug} />
+  );
+};
+
+export const ProfileTrackers = ({ userSlug }: { userSlug: string }) => {
   const trpc = useTRPC();
   const { data: userData, status: userStatus } = useSuspenseQuery(
     trpc.user.getUserBySlug.queryOptions({ slug: userSlug }),
@@ -314,12 +358,7 @@ export const ProfileBody = ({ userSlug }: { userSlug: string }) => {
       return relatedTracker?.status === TrackerStatus.COMPLETE;
     })
     .map((game, index) => (
-      <GameCard
-        key={"ip" + index}
-        gameId={game.id}
-        game={game}
-        direction="vertical"
-      />
+      <GameCard key={"ip" + index} game={game} direction="vertical" />
     ));
   const inProgressGames = userTrackedGames
     .filter((game) => {
@@ -329,18 +368,13 @@ export const ProfileBody = ({ userSlug }: { userSlug: string }) => {
       return relatedTracker?.status === TrackerStatus.IN_PROGRESS;
     })
     .map((game, index) => (
-      <GameCard
-        key={"c" + index}
-        gameId={game.id}
-        game={game}
-        direction="vertical"
-      />
+      <GameCard key={"c" + index} game={game} direction="vertical" />
     ));
 
   return (
     <section className={styles.profile_body}>
       <h4>In Progress Games</h4>
-      <Carousel anchor="in_progress">
+      <Carousel>
         <Suspense
           fallback={Array.from({ length: 4 }, (_, i) => (
             <GameCardLoading key={"ip" + i} direction="vertical" />
@@ -350,7 +384,7 @@ export const ProfileBody = ({ userSlug }: { userSlug: string }) => {
         </Suspense>
       </Carousel>
       <h4>Completed Games</h4>
-      <Carousel anchor="completed">
+      <Carousel>
         <Suspense
           fallback={Array.from({ length: 4 }, (_, i) => (
             <GameCardLoading key={"c" + i} direction="vertical" />
@@ -367,13 +401,13 @@ export const ProfileBodyLoading = () => {
   return (
     <section className={styles.profile_body}>
       <h4>In Progress Games</h4>
-      <Carousel anchor="in_progress">
+      <Carousel>
         {Array.from({ length: 5 }, (_, i) => (
           <GameCardLoading key={"ip" + i} direction="vertical" />
         ))}
       </Carousel>
       <h4>Completed Games</h4>
-      <Carousel anchor="completed">
+      <Carousel>
         {Array.from({ length: 5 }, (_, i) => (
           <GameCardLoading key={"c" + i} direction="vertical" />
         ))}

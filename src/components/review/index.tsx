@@ -13,7 +13,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import type { Review } from "@/prisma/generated/prisma";
+import { c } from "@/lib/utils";
 
 const Review: React.FC<{ review: SafeReview }> = ({ review }) => {
   const trpc = useTRPC();
@@ -77,9 +77,7 @@ const Review: React.FC<{ review: SafeReview }> = ({ review }) => {
           <Button
             ref={likeButtonRef}
             onClick={onLikeButtonClick}
-            className={[styles.like_button, isLiked ? styles.liked : null].join(
-              " ",
-            )}
+            className={c(styles.like_button, isLiked ? styles.liked : null)}
           >
             {isLiked ? solidLikeIcon : likeIcon}
           </Button>
@@ -92,7 +90,7 @@ const Review: React.FC<{ review: SafeReview }> = ({ review }) => {
 
 export const ReviewLoading = () => {
   return (
-    <div className={[styles.game_review, styles.loading].join(" ")}>
+    <div className={c(styles.game_review, styles.loading)}>
       <header>
         <span className={styles.review_author_image_sk} />
         <span className={styles.review_author_sk} />

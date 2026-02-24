@@ -1,47 +1,30 @@
 @use "@/styling/colors.scss" as c;
+@use "@/styling/responsive.scss" as r;
 
 .carousel {
   display: flex;
   flex-flow: row nowrap;
   margin-block: 1rem;
-  overflow-x: hidden;
+  overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   position: relative;
-  anchor-name: attr(data-anchor type(<custom-ident>), "carousel");
 
-  &.show_buttons {
-    @supports selector(::scroll-button(*)) {
-      &::scroll-button(*) {
-        z-index: 30;
-        border: 0;
-        background: none;
-        font-size: 1.2rem;
-        color: c.$fg;
-        background-color: c.$bg2;
-        cursor: pointer;
-        position: absolute;
-        position-anchor: attr(data-anchor type(<custom-ident>), "carousel");
-        padding: 8px;
-        border-radius: 50%;
-        box-shadow: 0 0 8px 2px c.$bg4;
-      }
+  padding: 0.4rem 1rem;
 
-      &::scroll-button(left) {
-        content: "◄";
-        right: calc(anchor(left) - 70px);
-        bottom: calc(anchor(bottom) + (anchor-size(height) / 2));
-      }
-      &::scroll-button(right) {
-        content: "►";
-        left: calc(anchor(right) - 70px);
-        bottom: calc(anchor(bottom) + (anchor-size(height) / 2));
-      }
+  @supports selector(::-webkit-scrollbar) and
+    selector(::-webkit-scrollbar-thumb) {
+    &::-webkit-scrollbar {
+      background: c.$black;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: c.$white;
     }
   }
-  > * {
-    min-width: 160px;
-    scroll-snap-align: center;
+  &.grid {
+    display: grid;
+    grid-auto-flow: column dense;
+    grid-template-rows: 1fr 1fr;
   }
 }

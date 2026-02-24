@@ -1,44 +1,44 @@
 "use client";
-import { isOverflowing } from "@/lib/utils";
+import { c } from "@/lib/utils";
 import styles from "./carousel.module.scss";
-import { useEffect, useRef, useState } from "react";
+import { KeyboardEventHandler, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { ComponentType } from "react";
+
+type CarouselType = Partial<ComponentType<"ul">> & {
+  children: React.ReactNode;
+  type?: "flex" | "grid";
+  forceHideButtons?: boolean;
+  className?: string;
+  itemSubmitFunc?: KeyboardEventHandler<HTMLUListElement>;
+};
 const Carousel = ({
   children,
-  anchor,
   forceHideButtons = false,
-}: {
-  children: React.ReactNode;
-  anchor: string;
-  forceHideButtons?: boolean;
-}) => {
-  const [showButtons, shouldShowButtons] = useState<boolean>(false);
+  type = "flex",
+  className = "",
+  itemSubmitFunc = () => {},
+  ...props
+}: CarouselType) => {
   const carouselRef = useRef<HTMLUListElement>(null);
+  const router = useRouter();
 
-  useEffect(() => {
-    console.log("um?");
-    function onResizeListener() {
-      if (carouselRef.current?.children.length) {
-        if (isOverflowing(carouselRef.current)) {
-          shouldShowButtons(true);
-        } else {
-          shouldShowButtons(false);
-        }
+  const onFocusedItemKeydown: KeyboardEventHandler<HTMLUListElement> = (e) => {
+    if (e.key === "Enter") {
+      const { target } = e;
+      if ("dataset" in target && "gameId") {
+        const dataset = target.dataset as DOMStringMap;
+        router.push(`/games/${dataset["gameId"]}`);
       }
+      itemSubmitFunc?.(e);
     }
-
-    onResizeListener();
-
-    window.addEventListener("resize", onResizeListener);
-    return () => window.removeEventListener("resize", onResizeListener);
-  }, []);
+  };
   return (
     <ul
-      data-anchor={"--" + anchor}
-      className={[
-        styles.carousel,
-        forceHideButtons ? null : showButtons ? styles.show_buttons : null,
-      ].join(" ")}
+      {...props}
+      className={c(styles.carousel, styles[type], className)}
       ref={carouselRef}
+      onKeyDown={onFocusedItemKeydown}
     >
       {children}
     </ul>

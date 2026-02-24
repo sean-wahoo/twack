@@ -16,7 +16,7 @@ import {
   useState,
 } from "react";
 import { notFound } from "next/navigation";
-import { User } from "next-auth";
+// import { type User as PrismaUser } from "@/prisma/generated/prisma/client";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { shelfSidebarAtom, shelfViewAtom } from "@/state/shelf";
 import Button from "@/components/button";
@@ -34,9 +34,10 @@ import {
   addTrackerFormAction,
   editCollectionFormAction,
 } from "@/lib/actions";
-import { useSession } from "next-auth/react";
 import Collection from "@/components/collection";
 import Kanban from "@/components/kanban";
+import { c } from "@/lib/utils";
+import { useSession, type $Infer } from "@/lib/auth/client";
 
 const ShelfContent: React.FC<{ view: string }> = ({ view }) => {
   const trpc = useTRPC();
@@ -47,13 +48,16 @@ const ShelfContent: React.FC<{ view: string }> = ({ view }) => {
     {},
   );
 
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
 
   const { data: userCollections, status: userCollectionsStatus } =
     useSuspenseQuery(
-      trpc.collection.getAuthedUserCollections.queryOptions(undefined, {
-        enabled: view === "collections" && sessionStatus === "authenticated",
-      }),
+      trpc.collection.getAuthedUserCollections.queryOptions(
+        { getGames: true },
+        {
+          enabled: view === "collections" && !!session,
+        },
+      ),
     );
 
   const collectionQueryKey =
@@ -80,6 +84,7 @@ const ShelfContent: React.FC<{ view: string }> = ({ view }) => {
       );
     }
     case "collections": {
+      console.log({ userCollections });
       const addCollectionFormDialog = (
         <Dialog ref={collectionDialogRef}>
           <form
@@ -181,7 +186,11 @@ const shelfArea: React.FC<{ userSlug: string; isOwnProfile: boolean }> = ({
   );
 };
 
-export const ShelfSidebar = ({ user }: { user: User }) => {
+export const ShelfSidebar = ({
+  user,
+}: {
+  user: typeof $Infer.Session.user;
+}) => {
   const [open, toggleSidebar] = useAtom(shelfSidebarAtom);
   const [shelfView, setShelfView] = useAtom(shelfViewAtom);
 
@@ -194,10 +203,10 @@ export const ShelfSidebar = ({ user }: { user: User }) => {
     <Button
       onClick={buttonOnClick}
       data-view="showcase"
-      className={[
+      className={c(
         styles.showcase,
         shelfView === "showcase" ? styles.active : null,
-      ].join(" ")}
+      )}
     >
       {sparklesIcon}
     </Button>
@@ -206,10 +215,10 @@ export const ShelfSidebar = ({ user }: { user: User }) => {
     <Button
       onClick={buttonOnClick}
       data-view="trackers"
-      className={[
+      className={c(
         styles.trackers,
         shelfView === "trackers" ? styles.active : null,
-      ].join(" ")}
+      )}
     >
       {viewColumnsIcon}
     </Button>
@@ -218,18 +227,16 @@ export const ShelfSidebar = ({ user }: { user: User }) => {
     <Button
       onClick={buttonOnClick}
       data-view="collections"
-      className={[
+      className={c(
         styles.collections,
         shelfView === "collections" ? styles.active : null,
-      ].join(" ")}
+      )}
     >
       {collectionIcon}
     </Button>
   );
   return (
-    <article
-      className={[styles.shelf_sidebar, open ? styles.open : null].join(" ")}
-    >
+    <article className={c(styles.shelf_sidebar, open ? styles.open : null)}>
       {showcaseButton}
       {trackersButton}
       {collectionsButton}

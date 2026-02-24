@@ -1,22 +1,14 @@
-import {
-  DragEventHandler,
-  MouseEventHandler,
-  Suspense,
-  useEffect,
-  useState,
-} from "react";
+"use client";
+import { DragEventHandler, Suspense } from "react";
 import styles from "./kanban.module.scss";
 import { trpc as _trpc, useTRPC } from "@/trpc/client";
-import { Tracker, TrackerStatus } from "@/prisma/generated/prisma";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { TrackerStatus } from "@/prisma/generated/prisma/enums";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "@/lib/auth/client";
 import { Game } from "@/lib/types";
 import GameCard from "../gameCard";
+import { c } from "@/lib/utils";
+import { Tracker } from "@/prisma/generated/prisma/client";
 
 const Kanban = () => {
   const cols = [
@@ -35,27 +27,35 @@ const Kanban = () => {
   ];
 
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
 
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
 
   const authedTrackersKey = trpc.tracker.getAuthedUserTrackers.queryKey();
   const { data: authedTrackersData, status: authedTrackersStatus } = useQuery(
     trpc.tracker.getAuthedUserTrackers.queryOptions(
       { withGames: true },
       {
-        enabled: sessionStatus === "authenticated",
+        enabled: !!session,
       },
     ),
   );
 
-  const cancelDragover: DragEventHandler<HTMLDivElement> = (e) => {
+  let lastDropTarget: EventTarget | null = null;
+  const handleDragover: DragEventHandler<HTMLDivElement> = (e) => {
     e.preventDefault();
-
     e.dataTransfer.dropEffect = "move";
+    if (lastDropTarget === e.target) {
+      return;
+    }
+    lastDropTarget = e.target;
+
+    if ((e.target as HTMLDivElement).classList.contains(styles.col)) {
+      const { pageX, pageY } = e;
+      console.log({ pageX, pageY });
+    }
   };
 
-  const handleCardDragStart: DragEventHandler<HTMLAnchorElement> = (e) => {
+  const handleCardDragStart: DragEventHandler<HTMLDivElement> = (e) => {
     e.dataTransfer.setData(
       "text/plain",
       JSON.stringify({
@@ -117,6 +117,9 @@ const Kanban = () => {
     const newStatus = e.currentTarget.dataset
       .colKey as keyof typeof TrackerStatus;
 
+    if (prevColKey === newStatus) {
+      return;
+    }
     await dragDropMutation.mutateAsync({
       prevStatus: prevColKey,
       status: newStatus,
@@ -133,7 +136,7 @@ const Kanban = () => {
         key: tracker.gameId,
         game: authedTrackersData.games.find(
           (game) => game.id === tracker.gameId,
-        ),
+        ) as Game,
       };
     }) ?? [];
 
@@ -147,21 +150,21 @@ const Kanban = () => {
             id={`kanban-col-${col.key}`}
             data-col-key={col.key}
             className={styles.col}
-            onDragOverCapture={cancelDragover}
+            onDragOverCapture={handleDragover}
             onDropCapture={handleCardDrop}
           >
             <h4>{col.name}</h4>
-            {cardsInCol.map((card) => {
+            {cardsInCol.map((card, index) => {
               return (
                 <GameCard
                   key={card.key}
                   draggable="true"
-                  gameId={card.game?.id ?? ""}
                   game={card.game}
                   data-card-key={card.key}
                   data-tracker-id={card.id}
-                  className={[styles.card, styles.draggable].join(" ")}
+                  className={c(styles.card, styles.draggable)}
                   isLink={false}
+                  direction="horizontal"
                   onDragStartCapture={handleCardDragStart}
                 />
               );
@@ -172,11 +175,7 @@ const Kanban = () => {
     </Suspense>
   );
 
-  return (
-    <div className={styles.kanban}>
-      <main>{colsContent}</main>
-    </div>
-  );
+  return <main className={styles.kanban}>{colsContent}</main>;
 };
 
 export default Kanban;

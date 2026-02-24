@@ -1,23 +1,38 @@
 "use client";
 
 import styles from "./button.module.scss";
-import { ComponentProps } from "react";
+import {
+  ComponentProps,
+  ComponentPropsWithRef,
+  useEffect,
+  useRef,
+} from "react";
 
-const Button: React.FC<ComponentProps<"button">> = ({
+const Button: React.FC<ComponentPropsWithRef<"button">> = ({
   className,
   children,
   onClick,
+  disabled,
   ...buttonProps
 }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const wrapperClassName = `${styles.button_wrapper} ${className}`;
   const wrapperOnClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
-    onClick?.(e);
+    if (!disabled) {
+      onClick?.(e);
+    }
   };
+  useEffect(() => {
+    if (buttonRef.current) {
+      buttonRef.current.disabled = !!disabled;
+    }
+  }, [disabled]);
   return (
     <button
+      {...buttonProps}
+      ref={buttonRef}
       onClick={wrapperOnClick}
       className={wrapperClassName}
-      {...buttonProps}
     >
       {children}
     </button>

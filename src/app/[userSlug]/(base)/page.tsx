@@ -4,6 +4,7 @@ import {
   ProfileBodyLoading,
   ProfileHeader,
   ProfileHeaderLoading,
+  ProfileToggleButton,
 } from "../profile";
 import { NextPage } from "next";
 import { Suspense } from "react";
@@ -18,9 +19,10 @@ const UserPage: NextPage<{
       <Suspense fallback={<ProfileHeaderLoading />}>
         <ProfileHeader userSlug={userSlug} />
       </Suspense>
-      {/* <Suspense fallback={<ProfileBodyLoading />}> */}
-      <ProfileBody userSlug={userSlug} />
-      {/* </Suspense> */}
+      <ProfileToggleButton />
+      <Suspense fallback={<ProfileBodyLoading />}>
+        <ProfileBody userSlug={userSlug} />
+      </Suspense>
     </>
   );
 };

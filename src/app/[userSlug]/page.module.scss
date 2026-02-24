@@ -5,6 +5,7 @@
   @include m.main-area;
 
   display: flex;
+  flex-flow: column;
   > .profile_header {
     display: flex;
     flex-flow: row;
@@ -24,8 +25,26 @@
     }
   }
 
-  > .profile_body {
-    margin-top: 4rem;
+  > .profile_type_button_container {
+    background-color: inherit;
+    padding: 0.8rem;
+    display: flex;
+    flex-flow: row nowrap;
+    gap: 12px;
+    margin: 24px 24px 0;
+    background-color: c.$bg2;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    width: fit-content;
+    > button {
+      font-family: var(--font-iosevka);
+      padding: 8px;
+      background-color: c.$bg3;
+      cursor: pointer;
+      &.profile_type_selected {
+        background-color: c.$blue;
+      }
+    }
   }
 
   > section {

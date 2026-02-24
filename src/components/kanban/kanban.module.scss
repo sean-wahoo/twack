@@ -1,47 +1,51 @@
 @use "@/styling/colors.scss" as c;
 .kanban {
-  width: 100%;
+  // width: 100%;
+  // height: 100%;
+  // flex-grow: 1;
+  // > main {
+  display: flex;
+  flex-flow: row nowrap;
+  width: auto;
   height: 100%;
-  flex-grow: 1;
-  > main {
+  background-color: c.$bg4;
+  padding: 1rem;
+  margin-inline: 1rem;
+  // overflow-x: hidden;
+
+  > .col {
+    user-select: none;
+    flex: 1 1 300px;
     display: flex;
-    flex-flow: row nowrap;
-    width: fit-content;
-    height: 100%;
-    background-color: c.$bg4;
-    padding: 1rem;
-    margin-inline: 1rem;
+    flex-flow: column nowrap;
+    align-items: center;
 
-    > .col {
-      user-select: none;
-      flex: 1 1 300px;
+    > h4 {
+      text-align: center;
+    }
 
-      > h4 {
-        text-align: center;
+    > .card {
+      background-color: c.$bg2;
+      margin: 0.6rem 0.4rem;
+      padding: 0.6rem;
+      min-height: 120px;
+
+      font-size: 0.9rem;
+
+      overflow-x: hidden;
+
+      > div > p {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        line-clamp: 3;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        white-space: wrap;
       }
 
-      > .card {
-        background-color: c.$bg2;
-        margin: 0.6rem 0.4rem;
-        padding: 0.6rem;
-        min-height: 120px;
-
-        font-size: 0.9rem;
-
-        overflow-x: hidden;
-
-        > div > h6 {
-          display: -webkit-box;
-          -webkit-box-orient: vertical;
-          -webkit-line-clamp: 3;
-          overflow: hidden;
-          white-space: wrap;
-        }
-
-        &.draggable {
-          cursor: pointer;
-          width: revert;
-        }
+      &.draggable {
+        cursor: pointer;
+        width: revert;
       }
     }
   }
