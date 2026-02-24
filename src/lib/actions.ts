@@ -1,7 +1,7 @@
 "use server";
 
 import { TrackerStatus } from "@/prisma/generated/prisma";
-import { auth } from "./auth";
+import { getSession } from "@/lib/auth/server";
 import prisma from "@/prisma/prisma";
 
 export type FormReturnState = {
@@ -18,8 +18,11 @@ export async function addTrackerFormAction(
     const gameId = initialState.gameId ?? (formData.get("gameId") as string);
     const complete = status === "COMPLETE";
 
-    const session = await auth();
-    const userId = session!.user.id;
+    const session = await getSession();
+    if (!session) {
+      throw new Error("not authed");
+    }
+    const userId = session.userId;
 
     await prisma.tracker.create({
       data: {
@@ -49,8 +52,12 @@ export async function addCollectionFormAction(
   try {
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
-    const session = await auth();
-    const userId = session!.user.id;
+    const session = await getSession();
+
+    if (!session) {
+      throw new Error("not authed");
+    }
+    const userId = session.userId;
 
     await prisma.collection.create({
       data: {
@@ -105,12 +112,14 @@ export async function editGameCollections(
 ): Promise<FormReturnState> {
   try {
     const collectionIds = formData.getAll("collectionIds") as string[];
-    const session = await auth();
-    const userId = session!.user.id;
+    const session = await getSession();
+    if (!session) {
+      throw new Error("not authed");
+    }
 
     const collectionsToSet = await prisma.collection.findMany({
       where: {
-        userId: userId,
+        userId: session.userId,
         id: {
           in: collectionIds,
         },
@@ -135,7 +144,7 @@ export async function editGameCollections(
     });
     const collectionsToUnset = await prisma.collection.findMany({
       where: {
-        userId: userId,
+        userId: session.userId,
         id: {
           notIn: collectionIds,
         },
@@ -160,7 +169,7 @@ export async function editGameCollections(
         id: {
           in: collectionsToSet.map((c) => c.id),
         },
-        userId: userId,
+        userId: session.userId,
         NOT: {
           gameIds: {
             has: gameId,
@@ -201,11 +210,13 @@ export async function addReviewFormAction(formData: FormData): Promise<void> {
     const rating = formData.get("rating") as string;
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
-    const session = await auth();
-    const userId = session!.user.id;
+    const session = await getSession();
+    if (!session) {
+      throw new Error("no auth");
+    }
     await prisma.review.create({
       data: {
-        userId: userId,
+        userId: session.userId,
         rating: Number(rating),
         gameId: gameId,
         title: title,

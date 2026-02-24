@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 import styles from "./gamePage.module.scss";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import Button from "@/components/button";
 import {
   FormEventHandler,
@@ -51,10 +51,7 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
 
   const queryClient = useQueryClient();
 
-  let releaseDateUnixTs =
-    "first_release_date" in game
-      ? game.first_release_date
-      : game.release_dates[0].date;
+  const { data: session } = useSession();
 
   let releaseDate: Date | undefined;
 
@@ -66,44 +63,34 @@ const GameArea: React.FC<{ game: Game }> = ({ game }) => {
 
   const { data: trackersData, status: trackersStatus } = useSuspenseQuery(
     trpc.tracker.getTrackersByUserId.queryOptions(
-      { userId: session!.user.id },
+      { userId: `${session?.userId}` },
       {
-        enabled: status === "authenticated",
+        enabled: !!session?.userId,
       },
     ),
   );
 
   const getTrackersKey = trpc.tracker.getTrackersByUserId.queryKey();
 
-  const { data: collectionsData, status: collectionsStatus } = useSuspenseQuery(
-    trpc.collection.getCollectionsWithGameId.queryOptions({
-      gameId: game.id,
-    }),
+  const { data: authedCollections, status: authedCollectionsStatus } = useQuery(
+    trpc.collection.getAuthedUserCollections.queryOptions(
+      { getGames: true },
+      {
+        enabled: !!session,
+        initialData: [],
+      },
+    ),
   );
-
-  const { data: authedCollections, status: authedCollectionsStatus } =
-    useSuspenseQuery(
-      trpc.collection.getAuthedUserCollections.queryOptions(undefined, {
-        enabled: status === "authenticated",
-      }),
-    );
-  const getGameCollectionsKey =
-    trpc.collection.getCollectionsWithGameId.queryKey();
   const getAuthedCollectionsKey =
-    trpc.collection.getAuthedUserCollections.queryKey();
+    trpc.collection.getAuthedUserCollections.queryKey({ getGames: true });
+  const showTrackerButton =
+    !!session &&
+    trackersStatus === "success" &&
+    !trackersData?.find((tracker) => tracker.gameId === game.id);
 
-  const { data: reviewsData, status: reviewsStatus } = useSuspenseQuery(
-    trpc.review.getReviewsByIgdbGameId.queryOptions({ gameId: game.id }),
-  );
+  const showCollectionButton = !!session && collectionsStatus === "success";
 
-  const gameButtons = () => {
-    if (status !== "authenticated") {
-      return;
-    }
-    const showTrackerButton =
-      status === "authenticated" &&
-      trackersStatus === "success" &&
-      !trackersData?.find((tracker) => tracker.gameId === game.id);
+  const showReviewButton = !!session;
 
     const showCollectionButton =
       status === "authenticated" && collectionsStatus === "success";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, exportSignIn, signOut } from "@/lib/auth/client";
 import styles from "./navbar.module.scss";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -23,7 +23,7 @@ const Navbar: React.FC = () => {
 
   const [dropdownShown, setDropdownShown] = useState<boolean>(false);
 
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const accountMenuDropdown = (
     <ul
       className={[
@@ -74,44 +74,35 @@ const Navbar: React.FC = () => {
     </Link>
   );
 
-  const accountMenu =
-    status !== "authenticated" ? (
-      <span className={styles.account_menu}>
-        <Button
-          onClick={() => {
-            if (accountMenuRef.current) {
-              accountMenuRef.current.showModal();
-            }
-          }}
-          className={styles.sign_in_button}
-        >
-          sign in!
-        </Button>
-      </span>
-    ) : (
-      <span
-        onClick={(e) => {
-          if (accountDropdownRef.current) {
-            setDropdownShown(!dropdownShown);
-            e.stopPropagation();
+  const accountMenu = !session ? (
+    <span ref={toggleElementRef} className={styles.account_menu}>
+      <Button
+        onClick={() => {
+          if (accountMenuRef.current) {
+            accountMenuRef.current.showModal();
           }
         }}
-        className={styles.account_menu}
+        className={styles.sign_in_button}
       >
-        <h5>{session.user!.name}</h5>
-        <Image
-          src={session.user!.image || ""}
-          alt={`${session.user!.name}'s face'`}
-          width={36}
-          height={36}
-        />
-        {chevronDown}
-      </span>
-    );
+        sign in!
+      </Button>
+    </span>
+  ) : (
+    <span ref={toggleElementRef} className={styles.account_menu}>
+      <h5>{session.user.name}</h5>
+      <Image
+        src={session.user.image || ""}
+        alt={`${session.user.name}'s face'`}
+        width={36}
+        height={36}
+      />
+      {chevronDown}
+    </span>
+  );
 
   const signInDialog = (
     <Dialog ref={accountMenuRef} className={styles.sign_in_dialog}>
-      <Button onClick={() => signIn()}>sign in with discord!</Button>
+      <Button onClick={() => exportSignIn()}>sign in with discord!</Button>
     </Dialog>
   );
 
@@ -262,7 +253,7 @@ const Navbar: React.FC = () => {
       {brand}
       {searchInput}
       {accountMenu}
-      {accountMenuDropdown}
+      {session ? accountMenuDropdown : null}
       {signInDialog}
     </nav>
   );

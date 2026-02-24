@@ -6,7 +6,7 @@ import Button from "@/components/button";
 import { likeIcon, solidLikeIcon } from "@/lib/svgIcons";
 import { SafeReview } from "@/lib/types";
 import { useTRPC } from "@/trpc/client";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth/client";
 import {
   useMutation,
   useQueryClient,
@@ -21,7 +21,7 @@ const Review: React.FC<{ review: SafeReview }> = ({ review }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const likeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
   const likesQueryKey = trpc.like.getLikesByObject.queryKey();
   const { data: likesData, status: likesStatus } = useSuspenseQuery(
@@ -32,10 +32,10 @@ const Review: React.FC<{ review: SafeReview }> = ({ review }) => {
   );
 
   useEffect(() => {
-    if (status === "authenticated" && likesStatus === "success") {
+    if (session && likesStatus === "success") {
       setIsLiked(!!likesData.find((like) => like.userId === session.user.id));
     }
-  }, [status]);
+  }, [session]);
   const mutationOptions = trpc.like.toggleLike.mutationOptions({
     keyPrefix: undefined,
     onSettled: () => queryClient.invalidateQueries({ queryKey: likesQueryKey }),
