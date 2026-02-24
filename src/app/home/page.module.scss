@@ -1,0 +1,51 @@
+@use "@/styling/mixins.scss" as m;
+@use "@/styling/colors.scss" as c;
+@use "@/styling/responsive.scss" as r;
+
+main.main_section {
+  @include m.main-area;
+
+  // display: grid;
+  // grid-template-columns: repeat(auto-fit, minmax(40%, 1fr));
+
+  display: flex;
+  flex-flow: row wrap;
+
+  @include r.responsive("mobile") {
+    flex-flow: column nowrap;
+  }
+
+  > .games_area {
+    $margin: 0.4rem;
+
+    flex: 0 1 calc(50% - (2 * $margin));
+    margin: $margin;
+
+    @include r.responsive("mobile") {
+      flex: 1 0 100%;
+    }
+
+    > h4 {
+      padding: 0.4rem;
+    }
+
+    > .genre_head_sk {
+      height: 1.4rem;
+      width: 50%;
+      padding: 0.4rem;
+      margin-block: 0.4rem;
+      background-color: c.$bg;
+    }
+
+    &:has(> .genre_head_sk) {
+      > ul {
+        margin-inline: 1.6rem;
+      }
+    }
+
+    &.large {
+      flex: 1 1 100%;
+      // grid-column: 1 / span 2;
+    }
+  }
+}
